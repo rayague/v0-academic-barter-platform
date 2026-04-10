@@ -16,6 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'ɖyɔ̌ - Academic Barter Platform',
   description: 'Exchange academic resources intelligently. Books, notes, materials - connect with students near you.',
+  generator: 'v0.app',
   keywords: ['academic', 'exchange', 'barter', 'students', 'books', 'notes', 'university'],
   authors: [{ name: 'ɖyɔ̌ Team' }],
   icons: {
@@ -36,8 +37,8 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   openGraph: {
-    title: 'ɖyɔ̌ - Academic Barter Platform',
-    description: 'Exchange academic resources intelligently.',
+    title: 'ɖyɔ̌ - Plateforme de Troc Académique',
+    description: 'Échangez des ressources académiques intelligemment.',
     type: 'website',
   },
 }
@@ -59,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
