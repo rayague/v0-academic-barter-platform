@@ -53,13 +53,12 @@ export default function SignUpPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
+      
+      // 1. Créer le compte utilisateur
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo:
-            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ??
-            `${window.location.origin}/auth/callback`,
           data: {
             full_name: formData.fullName,
             university: formData.university,
@@ -68,12 +67,41 @@ export default function SignUpPage() {
         },
       })
 
-      if (error) {
-        setError(error.message)
+      if (signUpError) {
+        setError(signUpError.message)
         return
       }
 
-      router.push("/auth/sign-up-success")
+      // 2. Connexion immédiate (auto-login après inscription)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      if (signInError) {
+        setError("Compte créé mais erreur lors de la connexion. Veuillez vous connecter manuellement.")
+        router.push("/auth/login")
+        return
+      }
+
+      // 3. Mettre à jour le profil créé automatiquement par le trigger
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: formData.fullName,
+          university: formData.university,
+          city: formData.city,
+          email: formData.email,
+        })
+        .eq("id", signUpData.user?.id)
+
+      if (profileError) {
+        console.error("Erreur mise à jour profil:", profileError)
+      }
+
+      // 4. Redirection directe vers le dashboard
+      router.push("/dashboard")
+      router.refresh()
     } catch {
       setError("Une erreur inattendue s'est produite")
     } finally {
@@ -144,7 +172,7 @@ export default function SignUpPage() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="vous@universite.edu"
+                  placeholder="prenom@uac.bj"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -161,7 +189,7 @@ export default function SignUpPage() {
                     id="university"
                     name="university"
                     type="text"
-                    placeholder="Votre université"
+                    placeholder="ex: UAC, EPAC, UP..."
                     value={formData.university}
                     onChange={handleChange}
                     required
@@ -176,7 +204,7 @@ export default function SignUpPage() {
                     id="city"
                     name="city"
                     type="text"
-                    placeholder="Votre ville"
+                    placeholder="ex: Cotonou, Abomey-Calavi, Parakou..."
                     value={formData.city}
                     onChange={handleChange}
                     required
