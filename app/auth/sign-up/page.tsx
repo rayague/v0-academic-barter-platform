@@ -190,13 +190,13 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <label htmlFor="email" className="text-sm font-medium">
-                  Email Universitaire
+                  Email
                 </label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="prenom.nom@universite.edu.bj"
+                  placeholder="prenom.nom@gmail.com"
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -207,7 +207,7 @@ export default function SignUpPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="university" className="text-sm font-medium">
-                    Université
+                    Université <span className="text-muted-foreground">(optionnel)</span>
                   </label>
                   <Input
                     id="university"
@@ -216,7 +216,6 @@ export default function SignUpPage() {
                     placeholder="ex: UAC, EPAC, UP..."
                     value={formData.university}
                     onChange={handleChange}
-                    required
                     className="h-12"
                   />
                 </div>

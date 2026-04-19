@@ -140,7 +140,7 @@ export function DashboardSidebar({ user, profile, className, onClose }: Dashboar
         </ul>
 
         <div className="mt-6 mb-4 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-          Autres
+          Plus
         </div>
         <ul className="space-y-1">
           {secondaryNavItems.map((item) => {

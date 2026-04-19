@@ -111,7 +111,7 @@ export function LandingHero() {
             className="mt-4 max-w-xl px-4 text-base leading-relaxed text-muted-foreground sm:mt-6 sm:max-w-2xl sm:px-0 sm:text-lg md:text-xl"
           >
             Connectez-vous avec des étudiants près de chez vous pour troquer des ressources académiques. 
-            Livres, notes, matériels - tout cela sans dépenser un centime.
+            Articles, notes, matériels - tout cela sans dépenser un centime.
           </motion.p>
 
           {/* CTA Buttons */}

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { motion } from "framer-motion"
 import { 
   BookOpen, 
@@ -13,12 +14,13 @@ import {
 const categories = [
   {
     icon: BookOpen,
-    name: "Livres",
+    name: "Articles",
     description: "Manuels et ouvrages",
     count: "3.2K+",
     color: "bg-violet-500",
     bgColor: "bg-violet-500/10",
     textColor: "text-violet-500",
+    slug: "books",
   },
   {
     icon: FileText,
@@ -28,6 +30,7 @@ const categories = [
     color: "bg-cyan-500",
     bgColor: "bg-cyan-500/10",
     textColor: "text-cyan-500",
+    slug: "exams",
   },
   {
     icon: FlaskConical,
@@ -37,6 +40,7 @@ const categories = [
     color: "bg-emerald-500",
     bgColor: "bg-emerald-500/10",
     textColor: "text-emerald-500",
+    slug: "materials",
   },
   {
     icon: GraduationCap,
@@ -46,6 +50,7 @@ const categories = [
     color: "bg-amber-500",
     bgColor: "bg-amber-500/10",
     textColor: "text-amber-500",
+    slug: "courses",
   },
   {
     icon: NotebookPen,
@@ -55,6 +60,7 @@ const categories = [
     color: "bg-pink-500",
     bgColor: "bg-pink-500/10",
     textColor: "text-pink-500",
+    slug: "notes",
   },
   {
     icon: Package,
@@ -64,6 +70,7 @@ const categories = [
     color: "bg-indigo-500",
     bgColor: "bg-indigo-500/10",
     textColor: "text-indigo-500",
+    slug: "other",
   },
 ]
 
@@ -100,13 +107,9 @@ export function LandingCategories() {
           className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {categories.map((category, index) => (
-            <motion.div
+            <Link
               key={index}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              whileHover={{ scale: 1.02 }}
+              href={`/explore?category=${category.slug}`}
               className="group cursor-pointer rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-lg"
             >
               <div className="flex items-center gap-4">
@@ -122,7 +125,7 @@ export function LandingCategories() {
                   <p className="text-xs text-muted-foreground">annonces</p>
                 </div>
               </div>
-            </motion.div>
+            </Link>
           ))}
         </motion.div>
       </div>

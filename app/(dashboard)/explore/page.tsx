@@ -27,7 +27,9 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
   return (
     <div className="space-y-6">
       <ExploreHeader />
-      <ExploreFilters categories={categories || []} currentParams={params} />
+      <Suspense fallback={<div className="h-20" />}>
+        <ExploreFilters categories={categories || []} currentParams={params} />
+      </Suspense>
       <Suspense fallback={<GridLoading />}>
         <ExploreGrid params={params} />
       </Suspense>
