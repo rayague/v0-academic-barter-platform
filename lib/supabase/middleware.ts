@@ -39,13 +39,13 @@ export async function updateSession(request: NextRequest) {
     !user
   ) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/auth/login'
     return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from auth pages
   if (
-    (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register') &&
+    (request.nextUrl.pathname === '/auth/login' || request.nextUrl.pathname === '/auth/sign-up') &&
     user
   ) {
     const url = request.nextUrl.clone()

@@ -72,55 +72,52 @@ export default function SignUpPage() {
         return
       }
 
-      // 2. Connexion immédiate (auto-login après inscription)
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
+      const signedUpUserId = signUpData.user?.id
+      const hasSession = !!signUpData.session
 
-      if (signInError) {
-        setError("Compte créé mais erreur lors de la connexion. Veuillez vous connecter manuellement.")
-        router.push("/auth/login")
+      // 2. Connexion immédiate (auto-login après inscription)
+      // Quand la confirmation email est OFF, Supabase retourne souvent directement une session.
+      if (!hasSession) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        })
+
+        if (signInError) {
+          setError(`Compte créé mais erreur lors de la connexion: ${signInError.message}`)
+          router.push("/auth/login")
+          return
+        }
+      }
+
+      const { data: { user: authedUser }, error: authedUserError } = await supabase.auth.getUser()
+      if (authedUserError) {
+        setError(authedUserError.message)
+        return
+      }
+      const userId = authedUser?.id || signedUpUserId
+      if (!userId) {
+        setError("Une erreur inattendue s'est produite")
         return
       }
 
       // 3. Créer ou mettre à jour le profil (si le trigger a échoué)
-      const { data: existingProfile } = await supabase
+      const { error: profileUpsertError } = await supabase
         .from("profiles")
-        .select("id")
-        .eq("id", signUpData.user?.id)
-        .single()
-
-      if (existingProfile) {
-        // Mettre à jour le profil existant
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update({
+        .upsert(
+          {
+            id: userId,
             full_name: formData.fullName,
             university: formData.university,
             city: formData.city,
             email: formData.email,
-          })
-          .eq("id", signUpData.user?.id)
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" }
+        )
 
-        if (updateError) {
-          console.error("Erreur mise à jour profil:", updateError)
-        }
-      } else {
-        // Créer le profil manuellement si le trigger n'a pas fonctionné
-        const { error: insertError } = await supabase
-          .from("profiles")
-          .insert({
-            id: signUpData.user?.id,
-            full_name: formData.fullName,
-            university: formData.university,
-            city: formData.city,
-            email: formData.email,
-          })
-
-        if (insertError) {
-          console.error("Erreur création profil:", insertError)
-        }
+      if (profileUpsertError) {
+        console.error("Erreur mise à jour profil:", profileUpsertError)
       }
 
       // 4. Redirection directe vers le dashboard
