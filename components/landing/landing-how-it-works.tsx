@@ -8,7 +8,7 @@ const steps = [
     icon: UserPlus,
     step: "01",
     title: "Créer un Compte",
-    description: "Inscrivez-vous avec votre email universitaire. Vérifiez votre statut d&apos;étudiant en quelques secondes.",
+    description: "Inscrivez-vous avec votre email pour vérifiez votre compte utilisateur en quelques secondes.",
   },
   {
     icon: Search,
@@ -20,7 +20,7 @@ const steps = [
     icon: MapPin,
     step: "03",
     title: "Trouver & Rencontrer",
-    description: "Utilisez la carte pour trouver des ressources proches. Rencontrez-vous sur le campus pour échanger.",
+    description: "Utilisez la carte pour trouver des ressources proches. Rencontrez-vous sur le campus ou des lieux publics pour échanger.",
   },
   {
     icon: Repeat,

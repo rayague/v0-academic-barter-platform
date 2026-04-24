@@ -5,21 +5,21 @@ import { Star, Quote } from "lucide-react"
 
 const testimonials = [
   {
-    content: "J&apos;ai économisé plus de 250 000 FCFA ce semestre en échangeant des manuels via ɖyɔ̌. La plateforme a rendu si facile la connexion avec d&apos;autres étudiants.",
+    content: "J’ai économisé plus de 25 000 FCFA ce semestre en échangeant des manuels via ɖyɔ̌. La plateforme a rendu si facile la connexion avec d’autres étudiants.",
     author: "Aminata K.",
     role: "Étudiante en Médecine",
     university: "Université de Lomé",
     rating: 5,
   },
   {
-    content: "En tant qu&apos;étudiant en ingénierie, les matériaux de labo sont chers. ɖyɔ̌ m&apos;a aidé à trouver tout ce dont j&apos;avais besoin auprès des anciens qui avaient déjà terminé les cours.",
+    content: "En tant qu’étudiant en ingénierie, les matériaux de labo sont chers. ɖyɔ̌ m’a aidé à trouver tout ce dont j’avais  besoin auprès des anciens qui avaient déjà terminé les cours.",
     author: "Kofi M.",
     role: "Étudiant en Ingénierie",
     university: "KNUST",
     rating: 5,
   },
   {
-    content: "La fonction de localisation est incroyable ! J&apos;ai trouvé quelqu&apos;un de mon propre campus en quelques minutes. Nous nous sommes rencontrés à la bibliothèque et avons échangé des notes.",
+    content: "La fonction de localisation est incroyable ! J’ai trouvé quelqu’un de mon propre campus en quelques minutes. Nous nous sommes rencontrés à la bibliothèque et avons  échangé des notes.",
     author: "Fatou D.",
     role: "Étudiante en Droit",
     university: "Université Cheikh Anta Diop",

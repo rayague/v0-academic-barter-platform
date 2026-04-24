@@ -19,7 +19,7 @@ const footerLinks = {
   ],
   legal: [
     { label: "Politique de confidentialité", href: "/privacy" },
-    { label: "Conditions d&apos;utilisation", href: "/terms" },
+    { label: "Conditions d'utilisation", href: "/terms" },
     { label: "Politique de cookies", href: "/cookies" },
   ],
   social: [

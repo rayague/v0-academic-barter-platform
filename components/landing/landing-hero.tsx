@@ -7,10 +7,9 @@ import { ArrowRight, Sparkles, BookOpen, Users, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const typingTexts = [
-  "Échangez le Savoir",
-  "Renforcez l'Apprentissage",
-  "Partagez les Connaissances",
-  "Connectez les Étudiants",
+  "Donner-Recevoir-Progresser",
+  "l'échange au service du savoir",
+  "Partagez vos ressources",
 ]
 
 function TypewriterText() {
@@ -110,8 +109,8 @@ export function LandingHero() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 max-w-xl px-4 text-base leading-relaxed text-muted-foreground sm:mt-6 sm:max-w-2xl sm:px-0 sm:text-lg md:text-xl"
           >
-            Connectez-vous avec des étudiants près de chez vous pour troquer des ressources académiques. 
-            Articles, notes, matériels - tout cela sans dépenser un centime.
+            Connectez-vous avec des étudiants près de chez vous pour troquer des ressources académiques. Articles, notes,
+            matériels.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -151,9 +150,9 @@ export function LandingHero() {
             className="mt-12 grid w-full max-w-md grid-cols-3 gap-4 sm:mt-16 sm:max-w-lg sm:gap-8 md:max-w-xl lg:gap-12"
           >
             {[
-              { icon: BookOpen, value: "10K+", label: "Ressources" },
-              { icon: Users, value: "5K+", label: "Étudiants" },
-              { icon: MapPin, value: "50+", label: "Universités" },
+              { icon: BookOpen, value: "1K+", label: "Ressources" },
+              { icon: Users, value: "500+", label: "Étudiants" },
+              { icon: MapPin, value: "20+", label: "Universités" },
             ].map((stat, index) => (
               <motion.div 
                 key={index} 

@@ -19,12 +19,12 @@ const features = [
   {
     icon: Infinity,
     title: "Annonces Illimitées",
-    description: "Publiez autant d&apos;annonces que vous souhaitez. Gratuit et sans limite pour tous les étudiants.",
+    description: "Publiez autant d’annonces que vous souhaitez, sans limite pour tous les utilisateurs.",
   },
   {
     icon: Shield,
-    title: "Étudiants Vérifiés",
-    description: "La vérification par email universitaire garantit que vous échangez avec de vrais étudiants.",
+    title: "Accès simple et sûr",
+    description: "Inscrivez-vous avec votre email habituel et rejoignez une communauté d'étudiants vérifiés en un clic.",
   },
   {
     icon: Star,
@@ -79,8 +79,8 @@ export function LandingFeatures() {
             <span className="gradient-text">Échanger Intelligemment</span>
           </h2>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            Conçu par des étudiants, pour des étudiants. Chaque fonctionnalité est pensée 
-            pour rendre le partage de ressources académiques simple et sécurisé.
+            Conçu pour la communauté académique. Chaque fonctionnalité est pensée 
+            pour rendre le partage de ressources simple et sécurisé.
           </p>
         </motion.div>
 
