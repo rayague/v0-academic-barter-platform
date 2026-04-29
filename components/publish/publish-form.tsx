@@ -98,13 +98,21 @@ export function PublishForm({ categories }: PublishFormProps) {
         return
       }
 
+      // Vérifier si l'ID de catégorie est un UUID valide (pas un ID par défaut comme "default-1")
+      const isValidUUID = (id: string) => {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        return uuidRegex.test(id)
+      }
+
+      const categoryId = formData.categoryId && isValidUUID(formData.categoryId) ? formData.categoryId : null
+
       const { data: insertedListing, error: insertError } = await supabase
         .from("listings")
         .insert({
           user_id: user.id,
           title: formData.title,
           description: formData.description,
-          category_id: formData.categoryId || null,
+          category_id: categoryId,
           condition: formData.condition,
           exchange_type: formData.exchangeType,
           city: formData.city,
