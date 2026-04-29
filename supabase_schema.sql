@@ -72,6 +72,8 @@ CREATE TABLE IF NOT EXISTS listings (
     condition TEXT NOT NULL CHECK (condition IN ('new', 'like_new', 'good', 'fair')),
     exchange_type TEXT NOT NULL DEFAULT 'in_person' CHECK (exchange_type IN ('in_person', 'delivery', 'both')),
     city TEXT,
+    latitude DECIMAL(10, 8),
+    longitude DECIMAL(11, 8),
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reserved', 'completed', 'archived')),
     views INTEGER DEFAULT 0,
     images TEXT[] DEFAULT '{}',

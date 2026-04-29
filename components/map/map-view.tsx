@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { MapPin, List, Map, Search, Navigation } from "lucide-react"
+import { MapPin, List, Map as MapIcon, Search, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
@@ -14,6 +14,7 @@ import {
   NotebookPen,
   Package,
 } from "lucide-react"
+import { LeafletMap } from "./leaflet-map"
 
 const categoryIcons: Record<string, React.ElementType> = {
   "book-open": BookOpen,
@@ -94,7 +95,7 @@ export function MapView({ listings }: MapViewProps) {
             size="sm"
             onClick={() => setViewMode("map")}
           >
-            <Map className="h-4 w-4" />
+            <MapIcon className="h-4 w-4" />
           </Button>
         </div>
       </motion.div>
@@ -180,15 +181,7 @@ export function MapView({ listings }: MapViewProps) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 py-16">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Map className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h3 className="mb-1 font-medium">Vue Carte Bientôt Disponible</h3>
-          <p className="text-center text-sm text-muted-foreground">
-            La carte interactive avec les marqueurs d&apos;annonces est en cours de développement
-          </p>
-        </div>
+        <LeafletMap listings={listings} />
       )}
     </div>
   )

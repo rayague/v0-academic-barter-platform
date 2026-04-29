@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { getRandomizedCityCoordinates } from "@/lib/geocoding"
 import {
   BookOpen,
   FileText,
@@ -128,6 +129,9 @@ export function PublishForm({ categories }: PublishFormProps) {
 
       const categoryId = formData.categoryId && isValidUUID(formData.categoryId) ? formData.categoryId : null
 
+      // Geocode city to get coordinates
+      const coords = formData.city ? getRandomizedCityCoordinates(formData.city) : null
+
       const payload: {
         user_id: string
         title: string
@@ -136,6 +140,8 @@ export function PublishForm({ categories }: PublishFormProps) {
         condition: string
         exchange_type: string
         city: string
+        latitude?: number
+        longitude?: number
         status: string
       } = {
         user_id: user.id,
@@ -149,6 +155,11 @@ export function PublishForm({ categories }: PublishFormProps) {
 
       if (categoryId) {
         payload.category_id = categoryId
+      }
+
+      if (coords) {
+        payload.latitude = coords.latitude
+        payload.longitude = coords.longitude
       }
 
       const { data: insertedListing, error: insertError } = await supabase
