@@ -53,12 +53,11 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Insert default categories
 INSERT INTO categories (name, name_fr, icon, color) VALUES
-    ('books', 'Livres', 'book-open', '#3b82f6'),
-    ('notes', 'Notes de Cours', 'notebook-pen', '#10b981'),
-    ('lab-equipment', 'Matériel Labo', 'flask-conical', '#f59e0b'),
-    ('study-materials', 'Matériel Étude', 'graduation-cap', '#8b5cf6'),
-    ('documents', 'Documents', 'file-text', '#ec4899'),
-    ('other', 'Autre', 'package', '#6b7280')
+    ('livres-cours', 'Livres et Supports de Cours', 'book-open', '#3b82f6'),
+    ('manuels', 'Manuels Scolaires & Livres', 'graduation-cap', '#8b5cf6'),
+    ('annales', 'Annales & Sujets d''Examens', 'file-text', '#f59e0b'),
+    ('notes-fiches', 'Notes de Cours & Fiches de Révision', 'notebook-pen', '#10b981'),
+    ('romans', 'Romans & Littérature', 'book-open', '#ec4899')
 ON CONFLICT (name) DO NOTHING;
 
 -- =====================================================

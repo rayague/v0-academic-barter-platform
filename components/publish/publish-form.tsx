@@ -71,6 +71,7 @@ export function PublishForm({ categories }: PublishFormProps) {
     !loading &&
     !!formData.title &&
     !!formData.condition &&
+    photos.length > 0 &&
     (categories.length === 0 || !!formData.categoryId)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,6 +90,11 @@ export function PublishForm({ categories }: PublishFormProps) {
 
       if (categories.length > 0 && !formData.categoryId) {
         setError("Veuillez choisir une catégorie")
+        return
+      }
+
+      if (photos.length === 0) {
+        setError("Veuillez ajouter au moins une photo")
         return
       }
 
@@ -276,7 +282,7 @@ export function PublishForm({ categories }: PublishFormProps) {
       {/* Photos */}
       <div className="space-y-2">
         <label htmlFor="photos" className="text-sm font-medium">
-          Photos (optionnel)
+          Photos <span className="text-destructive">*</span>
         </label>
         <Input
           id="photos"
