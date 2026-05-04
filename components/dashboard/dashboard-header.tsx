@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Menu, Bell, Search, X, User, Settings, LogOut } from "lucide-react"
+import { Menu, Bell, Search, X, User as UserIcon, Settings, LogOut, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -32,6 +32,7 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
@@ -48,9 +49,34 @@ export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderP
       setUnreadCount(count ?? 0)
     }
 
-    void loadUnreadCount()
+    const loadUnreadMessages = async () => {
+      // Compter les messages non lus dans les conversations de l'utilisateur
+      const { data: conversations } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id)
 
-    channel = supabase
+      if (!conversations || conversations.length === 0) {
+        setUnreadMessages(0)
+        return
+      }
+
+      const conversationIds = conversations.map((c) => c.conversation_id)
+
+      const { count } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .in("conversation_id", conversationIds)
+        .neq("sender_id", user.id)
+        .eq("read", false)
+
+      setUnreadMessages(count ?? 0)
+    }
+
+    void loadUnreadCount()
+    void loadUnreadMessages()
+
+    const notifChannel = supabase
       .channel(`notifications:${user.id}`)
       .on(
         "postgres_changes",
@@ -66,10 +92,24 @@ export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderP
       )
       .subscribe()
 
+    const msgChannel = supabase
+      .channel(`messages:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          void loadUnreadMessages()
+        },
+      )
+      .subscribe()
+
     return () => {
-      if (channel) {
-        supabase.removeChannel(channel)
-      }
+      supabase.removeChannel(notifChannel)
+      supabase.removeChannel(msgChannel)
     }
   }, [user.id])
 
@@ -130,6 +170,24 @@ export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderP
 
       {/* Right side - Actions */}
       <div className="flex items-center gap-2">
+        {/* Messages */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative shrink-0"
+          asChild
+        >
+          <Link href="/conversations">
+            <MessageSquare className="h-5 w-5" />
+            {unreadMessages > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {unreadMessages > 99 ? "99+" : unreadMessages}
+              </span>
+            )}
+            <span className="sr-only">Messages</span>
+          </Link>
+        </Button>
+
         {/* Notifications */}
         <Button
           variant="ghost"
@@ -171,7 +229,7 @@ export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderP
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/profile" className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
+                <UserIcon className="mr-2 h-4 w-4" />
                 Mon Profil
               </Link>
             </DropdownMenuItem>

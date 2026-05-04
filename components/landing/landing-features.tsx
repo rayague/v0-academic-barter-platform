@@ -14,27 +14,27 @@ const features = [
   {
     icon: MapPin,
     title: "Découverte Géolocalisée",
-    description: "Trouvez des étudiants et des ressources près de votre campus. Échangez en personne ou organisez une livraison.",
+    description: "Trouvez des utilisateurs et des ressources près de votre campus. Échangez en personne ou organisez une livraison.",
   },
   {
     icon: Infinity,
     title: "Annonces Illimitées",
-    description: "Publiez autant d’annonces que vous souhaitez, sans limite pour tous les utilisateurs.",
+    description: "Publiez autant d'annonces que vous souhaitez, sans limite pour tous les utilisateurs.",
   },
   {
     icon: Shield,
     title: "Accès simple et sûr",
-    description: "Inscrivez-vous avec votre email habituel et rejoignez une communauté d'étudiants vérifiés en un clic.",
+    description: "Inscrivez-vous avec votre email habituel et rejoignez une communauté d'utilisateurs vérifiés en un clic.",
   },
   {
     icon: Star,
     title: "Confiance & Avis",
-    description: "Construisez votre réputation grâce aux avis. Consultez les notes avant d&apos;échanger.",
+    description: "Construisez votre réputation grâce aux avis. Consultez les notes avant d'échanger.",
   },
   {
     icon: Zap,
     title: "Matching Intelligent",
-    description: "Les suggestions basées sur l&apos;IA vous aident à trouver rapidement exactement ce dont vous avez besoin.",
+    description: "Les suggestions basées sur l'IA vous aident à trouver rapidement exactement ce dont vous avez besoin.",
   },
   {
     icon: Smartphone,

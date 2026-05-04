@@ -49,29 +49,6 @@ export default async function PublishPage() {
     redirect("/auth/login")
   }
 
-  // Vérifier si l'utilisateur a un paiement récent (moins de 24h)
-  const { data: recentPayment } = await supabase
-    .from("payments")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("status", "completed")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single()
-
-  const hasValidPayment = () => {
-    if (!recentPayment) return false
-    const paymentTime = new Date(recentPayment.created_at).getTime()
-    const now = new Date().getTime()
-    const hoursDiff = (now - paymentTime) / (1000 * 60 * 60)
-    return hoursDiff < 24
-  }
-
-  // Rediriger vers la page de paiement si pas de paiement valide
-  if (!hasValidPayment()) {
-    redirect("/publish/payment")
-  }
-
   const { data: dbCategories } = await supabase
     .from("categories")
     .select("*")

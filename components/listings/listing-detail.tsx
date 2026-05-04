@@ -16,6 +16,7 @@ import {
   Repeat,
   Flag,
   Edit,
+  MessageCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -87,6 +88,7 @@ export function ListingDetail({ listing, isFavorited: initialFavorited, isOwner,
   const [isFavorited, setIsFavorited] = useState(initialFavorited)
   const [loading, setLoading] = useState(false)
   const [exchangeLoading, setExchangeLoading] = useState(false)
+  const [contactLoading, setContactLoading] = useState(false)
 
   const CategoryIcon = categoryIcons[listing.categories?.icon || "package"] || Package
   const hasImages = listing.images && listing.images.length > 0
@@ -179,6 +181,111 @@ export function ListingDetail({ listing, isFavorited: initialFavorited, isOwner,
       console.error(message)
     } finally {
       setExchangeLoading(false)
+    }
+  }
+
+  const handleContact = async () => {
+    if (contactLoading) return
+    setContactLoading(true)
+
+    try {
+      const supabase = createClient()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        router.push("/auth/login")
+        return
+      }
+
+      if (!listing?.profiles?.id) {
+        throw new Error("Impossible d'identifier le propriétaire de l'annonce")
+      }
+
+      if (listing.profiles.id === user.id) {
+        throw new Error("Vous ne pouvez pas vous contacter vous-même")
+      }
+
+      // Vérifier si une conversation existe déjà entre ces deux utilisateurs pour cette annonce
+      const { data: existingParticipants, error: participantsError } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id)
+
+      if (participantsError) throw participantsError
+
+      let conversationId: string | null = null
+
+      if (existingParticipants && existingParticipants.length > 0) {
+        // Vérifier si le propriétaire de l'annonce est dans une de ces conversations
+        const conversationIds = existingParticipants.map((p) => p.conversation_id)
+        
+        const { data: otherParticipants } = await supabase
+          .from("conversation_participants")
+          .select("conversation_id")
+          .eq("user_id", listing.profiles.id)
+          .in("conversation_id", conversationIds)
+
+        if (otherParticipants && otherParticipants.length > 0) {
+          conversationId = otherParticipants[0].conversation_id
+        }
+      }
+
+      // Si pas de conversation existante, en créer une nouvelle
+      if (!conversationId) {
+        const { data: newConversation, error: convError } = await supabase
+          .from("conversations")
+          .insert({ listing_id: listing.id })
+          .select("id")
+          .single()
+
+        if (convError) throw convError
+
+        conversationId = newConversation.id
+
+        // Ajouter les deux participants
+        const { error: addParticipantsError } = await supabase
+          .from("conversation_participants")
+          .insert([
+            { conversation_id: conversationId, user_id: user.id },
+            { conversation_id: conversationId, user_id: listing.profiles.id },
+          ])
+
+        if (addParticipantsError) throw addParticipantsError
+
+        // Créer le premier message avec les détails de l'annonce
+        const initialMessage = `Bonjour ! Je suis intéressé(e) par votre annonce "${listing.title}"${listing.city ? ` à ${listing.city}` : ""}. Est-elle toujours disponible ?`
+
+        const { error: messageError } = await supabase
+          .from("messages")
+          .insert({
+            conversation_id: conversationId,
+            sender_id: user.id,
+            content: initialMessage,
+          })
+
+        if (messageError) throw messageError
+
+        // Créer une notification pour le propriétaire
+        await supabase.from("notifications").insert({
+          recipient_id: listing.profiles.id,
+          actor_id: user.id,
+          type: "new_message",
+          data: {
+            conversation_id: conversationId,
+            listing_id: listing.id,
+            listing_title: listing.title,
+            preview: initialMessage.substring(0, 100),
+          },
+        })
+      }
+
+      // Rediriger vers la page de conversation
+      router.push(`/conversations/${conversationId}`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Une erreur inattendue s'est produite"
+      console.error(message)
+    } finally {
+      setContactLoading(false)
     }
   }
 
@@ -340,13 +447,30 @@ export function ListingDetail({ listing, isFavorited: initialFavorited, isOwner,
             )}
 
             {!isOwner && (
-              <Button
-                className="w-full gap-2"
-                onClick={handleProposeExchange}
-                disabled={exchangeLoading || !currentUserId}
-              >
-                {exchangeLoading ? "Envoi..." : "Proposer un échange"}
-              </Button>
+              <div className="space-y-2">
+                <Button
+                  className="w-full gap-2"
+                  onClick={handleContact}
+                  disabled={contactLoading || !currentUserId}
+                  variant="outline"
+                >
+                  {contactLoading ? (
+                    "Connexion..."
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4" />
+                      Contacter
+                    </>
+                  )}
+                </Button>
+                <Button
+                  className="w-full gap-2"
+                  onClick={handleProposeExchange}
+                  disabled={exchangeLoading || !currentUserId}
+                >
+                  {exchangeLoading ? "Envoi..." : "Proposer un échange"}
+                </Button>
+              </div>
             )}
 
             {isOwner && (

@@ -8,6 +8,9 @@ interface ExploreGridProps {
     search?: string
     condition?: string
     sort?: string
+    city?: string
+    lat?: string
+    lng?: string
   }
 }
 
@@ -44,6 +47,28 @@ export async function ExploreGrid({ params }: ExploreGridProps) {
   // Apply condition filter
   if (params.condition) {
     query = query.eq("condition", params.condition)
+  }
+
+  // Apply city filter
+  if (params.city) {
+    query = query.ilike("city", `%${params.city}%`)
+  }
+
+  // Apply geo filter (radius ~50km if lat/lng provided)
+  if (params.lat && params.lng) {
+    const lat = parseFloat(params.lat)
+    const lng = parseFloat(params.lng)
+    const radiusKm = 50
+    
+    // Approximation: 1 degree ≈ 111km
+    const latDelta = radiusKm / 111
+    const lngDelta = radiusKm / (111 * Math.cos(lat * Math.PI / 180))
+    
+    query = query
+      .gte("latitude", lat - latDelta)
+      .lte("latitude", lat + latDelta)
+      .gte("longitude", lng - lngDelta)
+      .lte("longitude", lng + lngDelta)
   }
 
   // Apply sorting

@@ -150,7 +150,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         condition: formData.condition,
         exchange_type: formData.exchangeType,
         city: formData.city,
-        status: "active",
+        status: "pending_payment",
       }
 
       if (categoryId) {
@@ -223,11 +223,8 @@ export function PublishForm({ categories }: PublishFormProps) {
         }
       }
 
-      setSuccess(true)
-      setTimeout(() => {
-        router.push("/dashboard")
-        router.refresh()
-      }, 1500)
+      // Redirection vers le paiement avec l'ID de l'annonce
+      router.push(`/publish/payment?listing_id=${listingId}`)
     } catch {
       setError("Une erreur inattendue s'est produite")
     } finally {

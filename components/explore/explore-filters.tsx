@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Search, SlidersHorizontal, X } from "lucide-react"
+import { Search, SlidersHorizontal, X, MapPin } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { GeoFilter } from "./geo-filter"
 import {
   BookOpen,
   FileText,
@@ -39,6 +40,9 @@ interface ExploreFiltersProps {
     search?: string
     condition?: string
     sort?: string
+    city?: string
+    lat?: string
+    lng?: string
   }
 }
 
@@ -88,7 +92,7 @@ export function ExploreFilters({ categories, currentParams }: ExploreFiltersProp
     router.push("/explore")
   }
 
-  const hasActiveFilters = currentParams.category || currentParams.search || currentParams.condition
+  const hasActiveFilters = currentParams.category || currentParams.search || currentParams.condition || currentParams.city || (currentParams.lat && currentParams.lng)
 
   return (
     <div className="space-y-4">
@@ -104,6 +108,7 @@ export function ExploreFilters({ categories, currentParams }: ExploreFiltersProp
             onChange={(e) => setSearchValue(e.target.value)}
           />
         </div>
+        <GeoFilter />
         <Button variant="outline" size="icon" className="h-11 w-11">
           <SlidersHorizontal className="h-4 w-4" />
         </Button>

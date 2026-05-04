@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS listings (
     city TEXT,
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'reserved', 'completed', 'archived')),
+    status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (status IN ('pending_payment', 'active', 'reserved', 'completed', 'archived')),
     views INTEGER DEFAULT 0,
     images TEXT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

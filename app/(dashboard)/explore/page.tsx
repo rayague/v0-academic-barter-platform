@@ -11,6 +11,9 @@ interface ExplorePageProps {
     search?: string
     condition?: string
     sort?: string
+    city?: string
+    lat?: string
+    lng?: string
   }>
 }
 
