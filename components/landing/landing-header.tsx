@@ -1,5 +1,6 @@
 "use client"
-
+const { data: { user } } = await supabase.auth.getUser();
+const displayUsername = user?.user_metadata?.full_name || "Utilisateur";
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
