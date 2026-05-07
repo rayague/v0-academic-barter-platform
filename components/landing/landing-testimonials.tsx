@@ -12,7 +12,7 @@ const testimonials = [
     rating: 5,
   },
   {
-    content: "En tant qu’utilisateur en ingénierie, les matériaux de labo sont chers. ɖyɔ̌ m’a aidé à trouver tout ce dont j’avais besoin auprès des anciens qui avaient déjà terminé les cours.",
+    content: "En tant qu’étudiant en ingénierie, les matériaux de labo sont chers. ɖyɔ̌ m’a aidé à trouver tout ce dont j’avais besoin auprès des anciens qui avaient déjà terminé les cours.",
     author: "Kofi M.",
     role: "Etudiant en Ingénierie",
     university: "KNUST",
