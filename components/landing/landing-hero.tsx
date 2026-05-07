@@ -109,7 +109,7 @@ export function LandingHero() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-4 max-w-xl px-4 text-base leading-relaxed text-muted-foreground sm:mt-6 sm:max-w-2xl sm:px-0 sm:text-lg md:text-xl"
           >
-            Connectez-vous avec des utilisateurs près de chez vous pour troquer des ressources académiques. Articles, notes,
+            Connectez-vous avec des utilisateurs près de chez vous pour échanger des ressources académiques. Articles, notes,
             matériels.
           </motion.p>
 
