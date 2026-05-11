@@ -222,7 +222,7 @@ export function DashboardHeader({ user, profile, onMenuClick }: DashboardHeaderP
                 {userInitial}
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{profile?.full_name || "Utilisateur"}</span>
+                <span className="text-sm font-medium">{profile?.full_name || user.email || "Utilisateur"}</span>
                 <span className="text-xs text-muted-foreground">{profile?.email || user.email}</span>
               </div>
             </div>

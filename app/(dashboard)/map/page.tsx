@@ -5,7 +5,7 @@ export default async function MapPage() {
   const supabase = await createClient()
 
   // Get listings with location data
-  const { data: listings } = await supabase
+  const { data: listingsData } = await supabase
     .from("listings")
     .select(`
       id,
@@ -19,6 +19,8 @@ export default async function MapPage() {
     .eq("status", "active")
     .not("city", "is", null)
     .limit(100)
+
+  const listings = (listingsData || []) as unknown as Array<any>
 
   return <MapView listings={listings || []} />
 }
