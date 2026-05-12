@@ -29,7 +29,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
   }
 
   // Récupérer les détails de la conversation
-  const { data: conversation } = await supabase
+  const { data: conversationData } = await supabase
     .from("conversations")
     .select(`
       id,
@@ -43,8 +43,19 @@ export default async function ConversationPage({ params }: ConversationPageProps
     .eq("id", id)
     .single()
 
-  if (!conversation) {
+  if (!conversationData) {
     redirect("/conversations")
+  }
+
+  // Type casting for Supabase response
+  const conversation = conversationData as unknown as {
+    id: string
+    listing_id: string | null
+    listing: any
+    participants: Array<{
+      user_id: string
+      profile: { full_name: string | null; avatar_url: string | null }
+    }>
   }
 
   // Récupérer tous les messages
@@ -61,10 +72,13 @@ export default async function ConversationPage({ params }: ConversationPageProps
     .order("created_at", { ascending: true })
 
   // Formater les données
-  const otherParticipantData = conversation.participants?.find(
-    (p: any) => p.user_id !== user.id
+  const participants = conversation.participants || []
+  
+  const otherParticipantData = participants.find(
+    (p) => p.user_id !== user.id
   )
-  const otherParticipant = otherParticipantData?.profile || { full_name: "Utilisateur", avatar_url: null }
+  const otherParticipant: { full_name: string | null; avatar_url: string | null } = 
+    otherParticipantData?.profile ?? { full_name: "Utilisateur", avatar_url: null }
   const otherUserId = otherParticipantData?.user_id
 
   const formattedMessages = messages?.map((m: any) => ({
@@ -85,12 +99,16 @@ export default async function ConversationPage({ params }: ConversationPageProps
       .eq("read", false)
   }
 
+  const listing = Array.isArray(conversation.listing) 
+    ? conversation.listing[0] 
+    : conversation.listing
+
   return (
     <ConversationDetail
       conversationId={id}
       currentUserId={user.id}
       otherUser={otherParticipant || { full_name: "Utilisateur", avatar_url: null }}
-      listing={conversation.listing}
+      listing={listing}
       messages={formattedMessages}
     />
   )
