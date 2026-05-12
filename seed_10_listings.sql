@@ -8,11 +8,11 @@
 -- First, ensure we have the categories (they should already exist from the fallback or schema)
 -- If categories don't exist, insert them
 INSERT INTO categories (id, name, name_fr, icon, color) VALUES
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'livres-cours', 'Livres et Supports de Cours', 'book-open', '#3b82f6'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'manuels', 'Manuels Scolaires & Livres', 'graduation-cap', '#8b5cf6'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'annales', 'Annales & Sujets d''Examens', 'file-text', '#f59e0b'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'notes-fiches', 'Notes de Cours & Fiches de Révision', 'notebook-pen', '#10b981'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5', 'romans', 'Romans & Littérature', 'book-open', '#ec4899')
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'annales-sujets', 'Annales et sujets d''examens', 'file-text', '#f59e0b'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'manuels-scolaires', 'Manuels scolaires', 'graduation-cap', '#8b5cf6'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'materiels-outils', 'Matériels et outils', 'package', '#3b82f6'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'fournitures-scolaires', 'Fournitures scolaires', 'notebook-pen', '#10b981'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5', 'autres-documents', 'Autres Documents Académiques', 'book-open', '#ec4899')
 ON CONFLICT (name) DO UPDATE SET
     name_fr = EXCLUDED.name_fr,
     icon = EXCLUDED.icon,
@@ -32,11 +32,11 @@ DECLARE
     cat5_id UUID;
 BEGIN
     -- Get category IDs
-    SELECT id INTO cat1_id FROM categories WHERE name = 'livres-cours' LIMIT 1;
-    SELECT id INTO cat2_id FROM categories WHERE name = 'manuels' LIMIT 1;
-    SELECT id INTO cat3_id FROM categories WHERE name = 'annales' LIMIT 1;
-    SELECT id INTO cat4_id FROM categories WHERE name = 'notes-fiches' LIMIT 1;
-    SELECT id INTO cat5_id FROM categories WHERE name = 'romans' LIMIT 1;
+    SELECT id INTO cat1_id FROM categories WHERE name = 'annales-sujets' LIMIT 1;
+    SELECT id INTO cat2_id FROM categories WHERE name = 'manuels-scolaires' LIMIT 1;
+    SELECT id INTO cat3_id FROM categories WHERE name = 'materiels-outils' LIMIT 1;
+    SELECT id INTO cat4_id FROM categories WHERE name = 'fournitures-scolaires' LIMIT 1;
+    SELECT id INTO cat5_id FROM categories WHERE name = 'autres-documents' LIMIT 1;
 
     -- Get some user IDs (you may need to adjust this based on your actual users)
     -- If you don't have users yet, run this AFTER creating users

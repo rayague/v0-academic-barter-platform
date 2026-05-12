@@ -14,11 +14,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- STEP 1: Create or ensure categories exist
 -- =====================================================
 INSERT INTO categories (id, name, name_fr, icon, color) VALUES
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'livres-cours', 'Livres et Supports de Cours', 'book-open', '#3b82f6'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'manuels', 'Manuels Scolaires & Livres', 'graduation-cap', '#8b5cf6'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'annales', 'Annales & Sujets d''Examens', 'file-text', '#f59e0b'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'notes-fiches', 'Notes de Cours & Fiches de Révision', 'notebook-pen', '#10b981'),
-    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5', 'romans', 'Romans & Littérature', 'book-open', '#ec4899')
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'annales-sujets', 'Annales et sujets d''examens', 'file-text', '#f59e0b'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2', 'manuels-scolaires', 'Manuels scolaires', 'graduation-cap', '#8b5cf6'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'materiels-outils', 'Matériels et outils', 'package', '#3b82f6'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4', 'fournitures-scolaires', 'Fournitures scolaires', 'notebook-pen', '#10b981'),
+    ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5', 'autres-documents', 'Autres Documents Académiques', 'book-open', '#ec4899')
 ON CONFLICT (name) DO UPDATE SET
     id = EXCLUDED.id,
     name_fr = EXCLUDED.name_fr,

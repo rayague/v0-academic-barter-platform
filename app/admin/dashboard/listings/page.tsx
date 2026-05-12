@@ -115,12 +115,14 @@ export default function AdminListingsPage() {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800"
-      case "pending_payment":
-        return "bg-yellow-100 text-yellow-800"
       case "archived":
         return "bg-gray-100 text-gray-800"
-      default:
+      case "reserved":
         return "bg-blue-100 text-blue-800"
+      case "completed":
+        return "bg-purple-100 text-purple-800"
+      default:
+        return "bg-slate-100 text-slate-800"
     }
   }
 
@@ -178,16 +180,6 @@ export default function AdminListingsPage() {
                       <td className="px-6 py-4 text-sm">{listing.views}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          {listing.status === "pending_payment" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleApprove(listing.id)}
-                              disabled={updating === listing.id}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
                           <Button
                             size="sm"
                             variant="outline"
