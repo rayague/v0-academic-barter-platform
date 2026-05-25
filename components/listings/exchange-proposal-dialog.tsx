@@ -175,22 +175,26 @@ export function ExchangeProposalDialog({
         throw new Error('Erreur lors de la création de l\'échange')
       }
 
-      // TODO: Créer une notification pour le propriétaire (à implémenter)
-      // const { error: notifError } = await supabase
-      //   .from('notifications')
-      //   .insert({
-      //     recipient_id: receiverId,
-      //     actor_id: currentUserId,
-      //     type: 'exchange_proposed',
-      //     data: {
-      //       exchange_id: insertedExchange.id,
-      //       listing_id: listingId,
-      //       listing_title: listingTitle,
-      //       proposed_article_id: selectedArticleId,
-      //       contact_email: contactEmail || null,
-      //       contact_phone: contactPhone || null,
-      //     },
-      //   })
+      // Créer une notification pour le propriétaire
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          recipient_id: receiverId,
+          actor_id: currentUserId,
+          type: 'exchange_proposed',
+          data: {
+            exchange_id: insertedExchange.id,
+            listing_id: listingId,
+            listing_title: listingTitle,
+            proposed_article_id: selectedArticleId,
+            contact_email: contactEmail || null,
+            contact_phone: contactPhone || null,
+          },
+        })
+
+      if (notifError) {
+        console.warn('Notification non créée (non-critique):', notifError)
+      }
 
       setSuccess(true)
       toast.success('Demande d\'échange envoyée avec succès!')
