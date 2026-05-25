@@ -5,6 +5,14 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
 
 type NotificationRow = {
   id: string
@@ -38,6 +46,8 @@ export function NotificationsList({
   userId: string
 }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialNotifications)
+  const [selectedNotif, setSelectedNotif] = useState<NotificationRow | null>(null)
+  const [respondLoading, setRespondLoading] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -58,6 +68,21 @@ export function NotificationsList({
         (payload) => {
           const newRow = payload.new as NotificationRow
           setNotifications((prev) => [newRow, ...prev])
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updatedRow = payload.new as NotificationRow
+          setNotifications((prev) =>
+            prev.map((n) => (n.id === updatedRow.id ? updatedRow : n))
+          )
         },
       )
       .subscribe()
@@ -106,6 +131,59 @@ export function NotificationsList({
 
   const unreadCount = notifications.reduce((acc, n) => acc + (n.read_at ? 0 : 1), 0)
 
+  const respondToExchange = async (accept: boolean) => {
+    if (!selectedNotif) return
+
+    setRespondLoading(true)
+    try {
+      const data = isRecord(selectedNotif.data) ? selectedNotif.data : {}
+      const exchangeId = getString(data, "exchange_id")
+
+      if (!exchangeId) {
+        throw new Error("Erreur: ID d'échange manquant")
+      }
+
+      // Mettre à jour l'échange
+      const { error: updateError } = await supabase
+        .from("exchanges")
+        .update({
+          status: accept ? "accepted" : "rejected",
+        })
+        .eq("id", exchangeId)
+
+      if (updateError) throw updateError
+
+      // Créer une notification pour l'autre utilisateur
+      const { error: notifError } = await supabase
+        .from("notifications")
+        .insert({
+          recipient_id: selectedNotif.actor_id,
+          actor_id: userId,
+          type: accept ? "exchange_accepted" : "exchange_rejected",
+          data: {
+            exchange_id: exchangeId,
+            listing_id: getString(data, "listing_id"),
+            listing_title: getString(data, "listing_title"),
+          },
+        })
+
+      if (notifError) {
+        console.error("Erreur lors de la notification de réponse:", notifError)
+      }
+
+      // Marquer comme lue et fermer
+      await markAsRead(selectedNotif.id)
+      setSelectedNotif(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erreur inconnue"
+      console.error(message)
+    } finally {
+      setRespondLoading(false)
+    }
+  }
+
+  const unreadCount = notifications.reduce((acc, n) => acc + (n.read_at ? 0 : 1), 0)
+
   if (!notifications.length) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center">
@@ -131,15 +209,21 @@ export function NotificationsList({
           const listingId = getString(data, "listing_id")
           const listingTitle = getString(data, "listing_title")
 
-          const title =
-            n.type === "exchange_proposed"
-              ? "Nouvelle proposition d'échange"
-              : "Notification"
+          let title = "Notification"
+          let description = "Vous avez une nouvelle notification."
+          let isProposal = false
 
-          const description =
-            n.type === "exchange_proposed"
-              ? `Quelqu'un a proposé un échange sur votre annonce${listingTitle ? ` : ${listingTitle}` : ""}.`
-              : "Vous avez une nouvelle notification."
+          if (n.type === "exchange_proposed") {
+            title = "Nouvelle proposition d'échange"
+            description = `Quelqu'un a proposé un échange sur votre annonce${listingTitle ? ` : ${listingTitle}` : ""}.`
+            isProposal = true
+          } else if (n.type === "exchange_accepted") {
+            title = "Proposition acceptée ✅"
+            description = `Votre proposition d'échange a été acceptée pour : ${listingTitle || "l'annonce"}.`
+          } else if (n.type === "exchange_rejected") {
+            title = "Proposition refusée ❌"
+            description = `Votre proposition d'échange a été refusée pour : ${listingTitle || "l'annonce"}.`
+          }
 
           const href = listingId ? `/listing/${listingId}` : "/dashboard"
 
@@ -147,7 +231,7 @@ export function NotificationsList({
             <div
               key={n.id}
               className={cn(
-                "rounded-xl border border-border bg-card p-4 transition-colors",
+                "rounded-xl border border-border bg-card p-4 transition-colors cursor-pointer hover:bg-accent",
                 !n.read_at && "border-primary/40 bg-primary/5",
               )}
             >
@@ -158,11 +242,20 @@ export function NotificationsList({
                   <p className="mt-2 text-xs text-muted-foreground">{formatDate(n.created_at)}</p>
 
                   <div className="mt-3 flex items-center gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={href}>Voir</Link>
-                    </Button>
+                    {isProposal ? (
+                      <Button 
+                        size="sm" 
+                        onClick={() => setSelectedNotif(n)}
+                      >
+                        Répondre
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={href}>Voir</Link>
+                      </Button>
+                    )}
 
-                    {!n.read_at && (
+                    {!n.read_at && !isProposal && (
                       <Button variant="ghost" size="sm" onClick={() => markAsRead(n.id)}>
                         Marquer comme lu
                       </Button>
@@ -179,5 +272,58 @@ export function NotificationsList({
         })}
       </div>
     </div>
-  )
+
+    {/* Dialog pour accepter/refuser */}
+    <Dialog open={!!selectedNotif} onOpenChange={(open) => !open && setSelectedNotif(null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Répondre à la proposition</DialogTitle>
+          <DialogDescription>
+            Acceptez ou refusez cette proposition d'échange
+          </DialogDescription>
+        </DialogHeader>
+
+        {selectedNotif && isRecord(selectedNotif.data) && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-muted p-4">
+              <p className="text-sm font-medium">
+                Annonce: {getString(selectedNotif.data, "listing_title") || "Annonce"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Contact: {getString(selectedNotif.data, "contact_email") || getString(selectedNotif.data, "contact_phone") || "Non spécifié"}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => respondToExchange(false)}
+                disabled={respondLoading}
+              >
+                {respondLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
+                Refuser
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => respondToExchange(true)}
+                disabled={respondLoading}
+              >
+                {respondLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                )}
+                Accepter
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  
 }
