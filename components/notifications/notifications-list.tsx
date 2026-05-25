@@ -47,6 +47,11 @@ export function NotificationsList({
 }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialNotifications)
   const [selectedNotif, setSelectedNotif] = useState<NotificationRow | null>(null)
+  const [actorProfile, setActorProfile] = useState<{
+    full_name: string | null
+    email: string | null
+    avatar_url: string | null
+  } | null>(null)
   const [respondLoading, setRespondLoading] = useState(false)
   const supabase = useMemo(() => createClient(), [])
 
@@ -174,11 +179,32 @@ export function NotificationsList({
       // Marquer comme lue et fermer
       await markAsRead(selectedNotif.id)
       setSelectedNotif(null)
+      setActorProfile(null)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erreur inconnue"
       console.error(message)
     } finally {
       setRespondLoading(false)
+    }
+  }
+
+  const handleOpenResponseDialog = async (n: NotificationRow) => {
+    setSelectedNotif(n)
+    
+    // Charger le profil du demandeur
+    if (n.actor_id) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, email, avatar_url")
+          .eq("id", n.actor_id)
+          .single()
+
+        setActorProfile(profile || null)
+      } catch (err) {
+        console.error("Erreur chargement profil:", err)
+        setActorProfile(null)
+      }
     }
   }
 
@@ -245,7 +271,7 @@ export function NotificationsList({
                     {isProposal ? (
                       <Button 
                         size="sm" 
-                        onClick={() => setSelectedNotif(n)}
+                        onClick={() => handleOpenResponseDialog(n)}
                       >
                         Répondre
                       </Button>
@@ -274,26 +300,65 @@ export function NotificationsList({
     </div>
 
     {/* Dialog pour accepter/refuser */}
-    <Dialog open={!!selectedNotif} onOpenChange={(open) => !open && setSelectedNotif(null)}>
+    <Dialog open={!!selectedNotif} onOpenChange={(open) => {
+      if (!open) {
+        setSelectedNotif(null)
+        setActorProfile(null)
+      }
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Répondre à la proposition</DialogTitle>
+          <DialogTitle>Répondre à la proposition d'échange</DialogTitle>
           <DialogDescription>
-            Acceptez ou refusez cette proposition d'échange
+            Acceptez ou refusez cette offre d'échange
           </DialogDescription>
         </DialogHeader>
 
         {selectedNotif && isRecord(selectedNotif.data) && (
           <div className="space-y-4">
-            <div className="rounded-lg bg-muted p-4">
-              <p className="text-sm font-medium">
-                Annonce: {getString(selectedNotif.data, "listing_title") || "Annonce"}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Contact: {getString(selectedNotif.data, "contact_email") || getString(selectedNotif.data, "contact_phone") || "Non spécifié"}
-              </p>
+            {/* Section: Demandeur */}
+            <div className="rounded-lg border border-border bg-muted/50 p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Demandeur</p>
+              <div className="space-y-1">
+                <p className="font-semibold text-base">
+                  {actorProfile?.full_name || "Utilisateur"}
+                </p>
+                {actorProfile?.email && (
+                  <p className="text-sm text-muted-foreground break-all">
+                    📧 {actorProfile.email}
+                  </p>
+                )}
+                {(getString(selectedNotif.data, "contact_email") || getString(selectedNotif.data, "contact_phone")) && (
+                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
+                    <strong>Contact fourni:</strong> {getString(selectedNotif.data, "contact_email") || getString(selectedNotif.data, "contact_phone")}
+                  </p>
+                )}
+              </div>
             </div>
 
+            {/* Section: Offre d'échange */}
+            <div className="rounded-lg border border-border bg-muted/50 p-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Offre d'échange</p>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Votre annonce:</p>
+                  <p className="font-medium text-base">
+                    {getString(selectedNotif.data, "listing_title") || "Annonce"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Son offre:</p>
+                  <p className="font-medium text-base">
+                    {getString(selectedNotif.data, "proposed_article_id") 
+                      ? `Article proposé (ID: ${getString(selectedNotif.data, "proposed_article_id")})`
+                      : "Détails non disponibles"
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
             <div className="flex gap-3">
               <Button
                 variant="outline"
