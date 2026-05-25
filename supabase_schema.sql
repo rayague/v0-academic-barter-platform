@@ -403,7 +403,7 @@ CREATE POLICY "Users can update own notifications"
 DROP POLICY IF EXISTS "Authenticated can insert notifications" ON notifications;
 CREATE POLICY "Authenticated can insert notifications"
     ON notifications FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated' AND (actor_id IS NULL OR actor_id = auth.uid()));
+    WITH CHECK (auth.role() = 'authenticated');
 
 -- Trigger to auto-update payments updated_at
 DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
