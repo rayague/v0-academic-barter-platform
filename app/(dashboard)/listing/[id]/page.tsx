@@ -16,7 +16,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .from("listings")
     .select(`
       *,
-      profiles:user_id (id, full_name, avatar_url, city, university, average_rating, total_exchanges),
+      profiles:user_id (id, full_name, email, avatar_url, city, university, average_rating, total_exchanges),
       categories:category_id (name, name_fr, icon, color)
     `)
     .eq("id", id)

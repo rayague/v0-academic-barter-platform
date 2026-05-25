@@ -67,6 +67,7 @@ interface ListingDetailProps {
     profiles: {
       id: string
       full_name: string | null
+      email: string | null
       avatar_url: string | null
       city: string | null
       university: string | null
@@ -238,6 +239,9 @@ export function ListingDetail({ listing, isFavorited: initialFavorited, isOwner,
               </div>
               <div>
                 <p className="font-semibold">{listing.profiles?.full_name || "Utilisateur"}</p>
+                {listing.profiles?.email && (
+                  <p className="text-xs text-muted-foreground truncate">{listing.profiles.email}</p>
+                )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
