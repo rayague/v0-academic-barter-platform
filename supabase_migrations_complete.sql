@@ -202,7 +202,48 @@ CREATE POLICY "Users can send messages" ON messages
   );
 
 -- =====================================================
--- 10. DÉSACTIVER LA CONFIRMATION EMAIL
+-- 10. CORRECTION TABLE admins (email, full_name, role)
+-- =====================================================
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE admins ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE admins DROP CONSTRAINT IF EXISTS admins_role_check;
+ALTER TABLE admins ADD CONSTRAINT admins_role_check
+  CHECK (role IN ('admin', 'super_admin', 'moderator'));
+
+-- =====================================================
+-- 11. RLS POLICIES POUR admins (INSERT et UPDATE)
+-- =====================================================
+DROP POLICY IF EXISTS "Admins can signup" ON admins;
+CREATE POLICY "Admins can signup"
+    ON admins FOR INSERT
+    WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
+CREATE POLICY "Super admin can update admins"
+    ON admins FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND role = 'super_admin'
+        )
+    );
+
+
+-- =====================================================
+-- 12. CRÉATION DU PREMIER SUPER ADMIN
+-- =====================================================
+-- ATTENTION: Remplacez 'UUID_DU_USER' par l'ID de l'utilisateur
+-- que vous venez de créer dans Auth > Users sur Supabase
+--
+-- 1. Allez dans Authentication > Users
+-- 2. Créez un utilisateur manuellement (ou récupérez son UUID)
+-- 3. Exécutez la requête ci-dessous avec le bon UUID
+--
+-- INSERT INTO admins (user_id, email, full_name, role, is_active)
+-- VALUES ('UUID_DU_USER', 'email@example.com', 'Super Admin', 'super_admin', true);
+
+-- =====================================================
+-- 13. DÉSACTIVER LA CONFIRMATION EMAIL
 -- =====================================================
 -- Dans Supabase Dashboard > Authentication > Settings > CONFIRM EMAIL = OFF
 -- OU exécuter :

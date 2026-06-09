@@ -288,8 +288,10 @@ CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE TABLE IF NOT EXISTS admins (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+    email TEXT,
+    full_name TEXT,
     is_active BOOLEAN DEFAULT TRUE,
-    role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'super_admin')),
+    role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'super_admin', 'moderator')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -589,7 +591,7 @@ CREATE POLICY "Admins can update reports"
         )
     );
 
--- Admins: Only admins can view
+-- Admins: Only admins can view, self-insert for signup
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Admins can view admins" ON admins;
@@ -599,6 +601,21 @@ CREATE POLICY "Admins can view admins"
         EXISTS (
             SELECT 1 FROM admins
             WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can signup" ON admins;
+CREATE POLICY "Admins can signup"
+    ON admins FOR INSERT
+    WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
+CREATE POLICY "Super admin can update admins"
+    ON admins FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND role = 'super_admin'
         )
     );
 

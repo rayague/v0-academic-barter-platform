@@ -157,7 +157,7 @@ export function NotificationsList({
       const { error: updateError } = await supabase
         .from("exchanges")
         .update({
-          status: accept ? "accepted" : "rejected",
+          status: accept ? "accepted" : "cancelled",
         })
         .eq("id", exchangeId)
 

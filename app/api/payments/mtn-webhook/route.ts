@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (newStatus === 'completed' && payment.listing_id) {
       const { data: listing } = await supabase
         .from('listings')
-        .select('status')
+        .select('status, title')
         .eq('id', payment.listing_id)
         .single()
 
@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
             type: 'listing_published',
             data: {
               listing_id: payment.listing_id,
+              listing_title: listing?.title ?? '',
               payment_id: payment.id,
             },
           })

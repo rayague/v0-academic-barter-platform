@@ -69,12 +69,20 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
     }, POLL_TIMEOUT)
 
     // Simulation automatique après 8 secondes (remplacer par l'appel API MTN réel)
-    setTimeout(() => {
-      fetch("/api/payments/simulate-confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId: id }),
-      }).catch((err) => console.error("Erreur simulation auto:", err))
+    setTimeout(async () => {
+      try {
+        const res = await fetch("/api/payments/simulate-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentId: id }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          console.error("Erreur simulation auto:", data.error || res.statusText)
+        }
+      } catch (err) {
+        console.error("Erreur simulation auto:", err)
+      }
     }, 8000)
   }, [checkPaymentStatus, stopPolling])
 
