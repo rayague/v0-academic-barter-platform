@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Upload, Loader2, MapPin, AlertCircle } from "lucide-react"
@@ -46,6 +46,13 @@ export function PublishForm({ categories }: PublishFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [photos, setPhotos] = useState<File[]>([])
+  const errorRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [error])
   
   const [formData, setFormData] = useState({
     title: "",
@@ -217,7 +224,10 @@ export function PublishForm({ categories }: PublishFormProps) {
       className="space-y-6 rounded-2xl border border-border bg-card p-6"
     >
       {error && (
-        <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+        <div
+          ref={errorRef}
+          className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-sm text-destructive"
+        >
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
           <div className="flex-1">
             <p className="font-semibold">Erreur</p>
@@ -422,6 +432,17 @@ export function PublishForm({ categories }: PublishFormProps) {
           />
         </div>
       </div>
+
+      {/* Bottom Error - toujours visible */}
+      {error && (
+        <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold">Erreur</p>
+            <p className="mt-1 whitespace-pre-wrap">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* Submit */}
       <div className="flex gap-3 pt-4">
