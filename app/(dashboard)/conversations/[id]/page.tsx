@@ -3,18 +3,17 @@ import { createClient } from "@/lib/supabase/server"
 import { ConversationDetail } from "@/components/conversations/conversation-detail"
 
 interface ConversationPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function ConversationPage({ params }: ConversationPageProps) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
-
-  const { id } = params
 
   // Vérifier que l'utilisateur est participant de cette conversation
   const { data: participant } = await supabase

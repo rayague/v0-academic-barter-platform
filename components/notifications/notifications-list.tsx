@@ -134,7 +134,12 @@ export function NotificationsList({
     }
   }
 
-  const unreadCount = notifications.reduce((acc, n) => acc + (n.read_at ? 0 : 1), 0)
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      setSelectedNotif(null)
+      setActorProfile(null)
+    }
+  }
 
   const respondToExchange = async (accept: boolean) => {
     if (!selectedNotif) return
@@ -219,93 +224,95 @@ export function NotificationsList({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {unreadCount > 0 ? `${unreadCount} non lue(s)` : "Tout est lu"}
-        </p>
-        <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
-          Tout marquer comme lu
-        </Button>
-      </div>
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            {unreadCount > 0 ? `${unreadCount} non lue(s)` : "Tout est lu"}
+          </p>
+          <Button variant="outline" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
+            Tout marquer comme lu
+          </Button>
+        </div>
 
-      <div className="space-y-2">
-        {notifications.map((n) => {
-          const data = isRecord(n.data) ? n.data : {}
-          const listingId = getString(data, "listing_id")
-          const listingTitle = getString(data, "listing_title")
+        <div className="space-y-2">
+          {notifications.map((n) => {
+            const data = isRecord(n.data) ? n.data : {}
+            const listingId = getString(data, "listing_id")
+            const listingTitle = getString(data, "listing_title")
 
-          let title = "Notification"
-          let description = "Vous avez une nouvelle notification."
-          let isProposal = false
+            let title = "Notification"
+            let description = "Vous avez une nouvelle notification."
+            let isProposal = false
 
-          if (n.type === "exchange_proposed") {
-            title = "Nouvelle proposition d'échange"
-            description = `Quelqu'un a proposé un échange sur votre annonce${listingTitle ? ` : ${listingTitle}` : ""}.`
-            isProposal = true
-          } else if (n.type === "exchange_accepted") {
-            title = "Proposition acceptée ✅"
-            description = `Votre proposition d'échange a été acceptée pour : ${listingTitle || "l'annonce"}.`
-          } else if (n.type === "exchange_rejected") {
-            title = "Proposition refusée ❌"
-            description = `Votre proposition d'échange a été refusée pour : ${listingTitle || "l'annonce"}.`
-          }
+            if (n.type === "exchange_proposed") {
+              title = "Nouvelle proposition d'échange"
+              description = `Quelqu'un a proposé un échange sur votre annonce${listingTitle ? ` : ${listingTitle}` : ""}.`
+              isProposal = true
+            } else if (n.type === "exchange_accepted") {
+              title = "Proposition acceptée ✅"
+              description = `Votre proposition d'échange a été acceptée pour : ${listingTitle || "l'annonce"}.`
+            } else if (n.type === "exchange_rejected") {
+              title = "Proposition refusée ❌"
+              description = `Votre proposition d'échange a été refusée pour : ${listingTitle || "l'annonce"}.`
+            } else if (n.type === "listing_published") {
+              title = "Annonce publiée ✅"
+              description = `Votre annonce "${listingTitle || ""}" a été publiée avec succès et est maintenant visible.`
+            } else if (n.type === "new_message") {
+              title = "Nouveau message"
+              description = `Vous avez reçu un nouveau message${listingTitle ? ` concernant : ${listingTitle}` : ""}.`
+            }
 
-          const href = listingId ? `/listing/${listingId}` : "/dashboard"
+            const href = listingId ? `/listing/${listingId}` : "/dashboard"
 
-          return (
-            <div
-              key={n.id}
-              className={cn(
-                "rounded-xl border border-border bg-card p-4 transition-colors cursor-pointer hover:bg-accent",
-                !n.read_at && "border-primary/40 bg-primary/5",
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">{title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-                  <p className="mt-2 text-xs text-muted-foreground">{formatDate(n.created_at)}</p>
-
-                  <div className="mt-3 flex items-center gap-2">
-                    {isProposal ? (
-                      <Button 
-                        size="sm" 
-                        onClick={() => handleOpenResponseDialog(n)}
-                      >
-                        Répondre
-                      </Button>
-                    ) : (
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={href}>Voir</Link>
-                      </Button>
-                    )}
-
-                    {!n.read_at && !isProposal && (
-                      <Button variant="ghost" size="sm" onClick={() => markAsRead(n.id)}>
-                        Marquer comme lu
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {!n.read_at && (
-                  <span className="mt-1 inline-flex h-2 w-2 shrink-0 rounded-full bg-primary" />
+            return (
+              <div
+                key={n.id}
+                className={cn(
+                  "rounded-xl border border-border bg-card p-4 transition-colors cursor-pointer hover:bg-accent",
+                  !n.read_at && "border-primary/40 bg-primary/5",
                 )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{formatDate(n.created_at)}</p>
 
-    {/* Dialog pour accepter/refuser */}
-    <Dialog open={!!selectedNotif} onOpenChange={(open) => {
-      if (!open) {
-        setSelectedNotif(null)
-        setActorProfile(null)
-      }
-    }}>
+                    <div className="mt-3 flex items-center gap-2">
+                      {isProposal ? (
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleOpenResponseDialog(n)}
+                        >
+                          Répondre
+                        </Button>
+                      ) : (
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={href}>Voir</Link>
+                        </Button>
+                      )}
+
+                      {!n.read_at && !isProposal && (
+                        <Button variant="ghost" size="sm" onClick={() => markAsRead(n.id)}>
+                          Marquer comme lu
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {!n.read_at && (
+                    <span className="mt-1 inline-flex h-2 w-2 shrink-0 rounded-full bg-primary" />
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Dialog pour accepter/refuser */}
+      <Dialog open={!!selectedNotif} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Répondre à la proposition d'échange</DialogTitle>
@@ -390,5 +397,6 @@ export function NotificationsList({
         )}
       </DialogContent>
     </Dialog>
-  
+    </>
+  )
 }

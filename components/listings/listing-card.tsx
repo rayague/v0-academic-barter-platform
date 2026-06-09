@@ -4,23 +4,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { MapPin, Eye, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  GraduationCap,
-  NotebookPen,
-  Package,
-} from "lucide-react"
-
-const categoryIcons: Record<string, React.ElementType> = {
-  "book-open": BookOpen,
-  "file-text": FileText,
-  "flask-conical": FlaskConical,
-  "graduation-cap": GraduationCap,
-  "notebook-pen": NotebookPen,
-  "package": Package,
-}
+import { getCategoryIcon } from "@/lib/utils/category"
+import { timeAgo } from "@/lib/utils/date"
 
 interface ListingCardProps {
   listing: {
@@ -47,20 +32,8 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, className }: ListingCardProps) {
-  const CategoryIcon = categoryIcons[listing.categories?.icon || "package"] || Package
+  const CategoryIcon = getCategoryIcon(listing.categories?.icon || "package")
   const hasImage = listing.images && listing.images.length > 0
-
-  const timeAgo = (date: string) => {
-    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000)
-    if (seconds < 60) return "À l'instant"
-    const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `Il y a ${minutes}min`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `Il y a ${hours}h`
-    const days = Math.floor(hours / 24)
-    if (days < 7) return `Il y a ${days}j`
-    return new Date(date).toLocaleDateString("fr-FR")
-  }
 
   return (
     <Link

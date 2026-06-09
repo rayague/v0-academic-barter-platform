@@ -6,24 +6,8 @@ import { MapPin, List, Map as MapIcon, Search, Navigation } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  GraduationCap,
-  NotebookPen,
-  Package,
-} from "lucide-react"
+import { getCategoryIcon } from "@/lib/utils/category"
 import { LeafletMap } from "./leaflet-map"
-
-const categoryIcons: Record<string, React.ElementType> = {
-  "book-open": BookOpen,
-  "file-text": FileText,
-  "flask-conical": FlaskConical,
-  "graduation-cap": GraduationCap,
-  "notebook-pen": NotebookPen,
-  "package": Package,
-}
 
 interface Listing {
   id: string
@@ -136,9 +120,9 @@ export function MapView({ listings }: MapViewProps) {
                 
                 {/* Listings preview */}
                 <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
-                  {city.listings.slice(0, 5).map((listing) => {
-                    const Icon = categoryIcons[listing.categories?.icon || "package"] || Package
-                    return (
+                {city.listings.slice(0, 5).map((listing) => {
+                  const Icon = getCategoryIcon(listing.categories?.icon || "package")
+                  return (
                       <Link
                         key={listing.id}
                         href={`/listing/${listing.id}`}

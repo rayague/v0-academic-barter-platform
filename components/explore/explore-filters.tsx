@@ -7,23 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { GeoFilter } from "./geo-filter"
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  GraduationCap,
-  NotebookPen,
-  Package,
-} from "lucide-react"
-
-const categoryIcons: Record<string, React.ElementType> = {
-  "book-open": BookOpen,
-  "file-text": FileText,
-  "flask-conical": FlaskConical,
-  "graduation-cap": GraduationCap,
-  "notebook-pen": NotebookPen,
-  "package": Package,
-}
+import { getCategoryIcon } from "@/lib/utils/category"
 
 interface Category {
   id: string
@@ -125,7 +109,7 @@ export function ExploreFilters({ categories, currentParams }: ExploreFiltersProp
           Tout
         </Button>
         {categories.map((category) => {
-          const Icon = categoryIcons[category.icon] || Package
+          const Icon = getCategoryIcon(category.icon)
           const isActive = currentParams.category === category.name
           return (
             <Button

@@ -231,6 +231,101 @@ CREATE INDEX IF NOT EXISTS idx_payments_listing_id ON payments(listing_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 
 -- =====================================================
+-- 11. REVIEWS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    exchange_id UUID NOT NULL REFERENCES exchanges(id) ON DELETE CASCADE,
+    reviewer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    reviewed_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(exchange_id, reviewer_id)
+);
+
+DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
+CREATE TRIGGER update_reviews_updated_at
+    BEFORE UPDATE ON reviews
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_reviews_exchange_id ON reviews(exchange_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewer_id ON reviews(reviewer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_reviewed_id ON reviews(reviewed_id);
+
+-- =====================================================
+-- 12. REPORTS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS reports (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    reporter_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    reported_user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    listing_id UUID REFERENCES listings(id) ON DELETE SET NULL,
+    reason TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+    admin_notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS update_reports_updated_at ON reports;
+CREATE TRIGGER update_reports_updated_at
+    BEFORE UPDATE ON reports
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_reports_reporter_id ON reports(reporter_id);
+CREATE INDEX IF NOT EXISTS idx_reports_reported_user_id ON reports(reported_user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_listing_id ON reports(listing_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+
+-- =====================================================
+-- 13. ADMINS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS admins (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE UNIQUE,
+    is_active BOOLEAN DEFAULT TRUE,
+    role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'super_admin')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS update_admins_updated_at ON admins;
+CREATE TRIGGER update_admins_updated_at
+    BEFORE UPDATE ON admins
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX IF NOT EXISTS idx_admins_user_id ON admins(user_id);
+
+-- =====================================================
+-- 14. USER BANS TABLE
+-- =====================================================
+CREATE TABLE IF NOT EXISTS user_bans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    reason TEXT NOT NULL,
+    banned_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    expires_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_bans_user_id ON user_bans(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_bans_is_active ON user_bans(is_active);
+
+DROP TRIGGER IF EXISTS update_user_bans_updated_at ON user_bans;
+CREATE TRIGGER update_user_bans_updated_at
+    BEFORE UPDATE ON user_bans
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =====================================================
 
@@ -244,6 +339,7 @@ ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exchanges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_bans ENABLE ROW LEVEL SECURITY;
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('listing-images', 'listing-images', true)
@@ -427,6 +523,117 @@ DROP POLICY IF EXISTS "Users can update own payments" ON payments;
 CREATE POLICY "Users can update own payments"
     ON payments FOR UPDATE
     USING (auth.uid() = user_id);
+
+-- Reviews: Users can view reviews for their exchanges
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view reviews for their exchanges" ON reviews;
+CREATE POLICY "Users can view reviews for their exchanges"
+    ON reviews FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM exchanges
+            WHERE exchanges.id = reviews.exchange_id
+            AND (exchanges.giver_id = auth.uid() OR exchanges.receiver_id = auth.uid())
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can create reviews for their exchanges" ON reviews;
+CREATE POLICY "Users can create reviews for their exchanges"
+    ON reviews FOR INSERT
+    WITH CHECK (
+        reviewer_id = auth.uid() AND
+        EXISTS (
+            SELECT 1 FROM exchanges
+            WHERE exchanges.id = reviews.exchange_id
+            AND (exchanges.giver_id = auth.uid() OR exchanges.receiver_id = auth.uid())
+            AND exchanges.status = 'completed'
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can update own reviews" ON reviews;
+CREATE POLICY "Users can update own reviews"
+    ON reviews FOR UPDATE
+    USING (reviewer_id = auth.uid());
+
+-- Reports: Users can create reports, view their own
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own reports" ON reports;
+CREATE POLICY "Users can view own reports"
+    ON reports FOR SELECT
+    USING (reporter_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can create reports" ON reports;
+CREATE POLICY "Users can create reports"
+    ON reports FOR INSERT
+    WITH CHECK (reporter_id = auth.uid());
+
+DROP POLICY IF EXISTS "Admins can view all reports" ON reports;
+CREATE POLICY "Admins can view all reports"
+    ON reports FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can update reports" ON reports;
+CREATE POLICY "Admins can update reports"
+    ON reports FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+-- Admins: Only admins can view
+ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can view admins" ON admins;
+CREATE POLICY "Admins can view admins"
+    ON admins FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+-- User bans: Only admins can view and manage
+ALTER TABLE user_bans ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can view user bans" ON user_bans;
+CREATE POLICY "Admins can view user bans"
+    ON user_bans FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can insert user bans" ON user_bans;
+CREATE POLICY "Admins can insert user bans"
+    ON user_bans FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
+
+DROP POLICY IF EXISTS "Admins can update user bans" ON user_bans;
+CREATE POLICY "Admins can update user bans"
+    ON user_bans FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM admins
+            WHERE user_id = auth.uid() AND is_active = true
+        )
+    );
 
 -- =====================================================
 -- FUNCTION: Auto-create profile on user signup

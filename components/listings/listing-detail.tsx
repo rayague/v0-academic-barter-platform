@@ -23,22 +23,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { ExchangeProposalDialog } from "./exchange-proposal-dialog"
 import { createClient } from "@/lib/supabase/client"
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  Package,
-  NotebookPen,
-} from "lucide-react"
-
-const categoryIcons: Record<string, React.ElementType> = {
-  "book-open": BookOpen,
-  "file-text": FileText,
-  "flask-conical": FlaskConical,
-  "graduation-cap": GraduationCap,
-  "notebook-pen": NotebookPen,
-  "package": Package,
-}
+import { getCategoryIcon } from "@/lib/utils/category"
+import { timeAgo } from "@/lib/utils/date"
 
 const conditionLabels: Record<string, string> = {
   new: "Neuf",
@@ -92,20 +78,8 @@ export function ListingDetail({ listing, isFavorited: initialFavorited, isOwner,
   const [loading, setLoading] = useState(false)
   const [exchangeDialogOpen, setExchangeDialogOpen] = useState(false)
 
-  const CategoryIcon = categoryIcons[listing.categories?.icon || "package"] || Package
+  const CategoryIcon = getCategoryIcon(listing.categories?.icon || "package")
   const hasImages = listing.images && listing.images.length > 0
-
-  const timeAgo = (date: string) => {
-    const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000)
-    if (seconds < 60) return "À l'instant"
-    const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `Il y a ${minutes} minute${minutes > 1 ? "s" : ""}`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `Il y a ${hours} heure${hours > 1 ? "s" : ""}`
-    const days = Math.floor(hours / 24)
-    if (days < 7) return `Il y a ${days} jour${days > 1 ? "s" : ""}`
-    return new Date(date).toLocaleDateString()
-  }
 
   const handleFavorite = async () => {
     setLoading(true)

@@ -1,87 +1,141 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Loader2, Check, Lock, Smartphone } from "lucide-react"
+import { Loader2, Check, Lock, Smartphone, AlertCircle, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
+import { Input } from "@/components/ui/input"
+
+const POLL_INTERVAL = 3000
+const POLL_TIMEOUT = 120000
 
 interface PaymentFormProps {
   userId: string
   listingId: string
 }
 
+type PaymentState = "idle" | "initiating" | "waiting_confirmation" | "completed" | "error"
+
 export function PaymentForm({ userId, listingId }: PaymentFormProps) {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  // MTN est la méthode par défaut et unique
-  const selectedMethod = "mtn"
+  const [state, setState] = useState<PaymentState>("idle")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current)
+      pollTimeoutRef.current = null
+    }
+  }, [])
+
+  const checkPaymentStatus = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/payments/status?payment_id=${id}`)
+      if (!res.ok) return
+
+      const data = await res.json()
+
+      if (data.payment?.status === "completed" && data.listingActive) {
+        stopPolling()
+        setState("completed")
+        setTimeout(() => {
+          router.push("/dashboard")
+          router.refresh()
+        }, 1500)
+      }
+    } catch (err) {
+      console.error("Erreur vérification statut paiement:", err)
+    }
+  }, [router, stopPolling])
+
+  const startPolling = useCallback((id: string) => {
+    pollIntervalRef.current = setInterval(() => {
+      checkPaymentStatus(id)
+    }, POLL_INTERVAL)
+
+    pollTimeoutRef.current = setTimeout(() => {
+      stopPolling()
+      setState("error")
+      setErrorMessage("Le paiement a pris trop de temps. Veuillez réessayer.")
+    }, POLL_TIMEOUT)
+
+    // Simulation automatique après 8 secondes (remplacer par l'appel API MTN réel)
+    setTimeout(() => {
+      fetch("/api/payments/simulate-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId: id }),
+      }).catch((err) => console.error("Erreur simulation auto:", err))
+    }, 8000)
+  }, [checkPaymentStatus, stopPolling])
+
+  useEffect(() => {
+    return () => stopPolling()
+  }, [stopPolling])
 
   const handlePayment = async () => {
-    if (!selectedMethod) return
-    setLoading(true)
+    const phone = phoneNumber.trim()
+    if (!phone || !/^\+?\d{7,15}$/.test(phone.replace(/[\s\-]/g, ''))) {
+      setErrorMessage("Veuillez entrer un numéro MTN valide")
+      return
+    }
+
+    setState("initiating")
+    setErrorMessage(null)
 
     try {
-      const supabase = createClient()
-
-      // Étape 1: Créer un paiement
-      const { data: payment, error: paymentError } = await supabase
-        .from("payments")
-        .insert({
-          user_id: userId,
-          listing_id: listingId,
-          amount: 1,
-          currency: "XOF",
-          status: "completed", // Simulé pour l'instant - en production: 'pending' puis confirmation
-          provider: selectedMethod,
-        })
-        .select("id")
-        .single()
-
-      if (paymentError) {
-        throw paymentError
-      }
-
-      // Étape 2: Mettre à jour le statut de l'annonce à 'active'
-      const { error: updateError } = await supabase
-        .from("listings")
-        .update({ status: "active" })
-        .eq("id", listingId)
-        .eq("user_id", userId)
-
-      if (updateError) {
-        throw updateError
-      }
-
-      // Étape 3: Créer une notification pour l'utilisateur
-      await supabase.from("notifications").insert({
-        recipient_id: userId,
-        type: "listing_published",
-        data: {
-          listing_id: listingId,
-          payment_id: payment?.id,
-        },
+      const res = await fetch("/api/payments/initiate-mtn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId, phoneNumber: phone }),
       })
 
-      // Succès
-      setSuccess(true)
-      
-      // Rediriger vers le tableau de bord après 2s
-      setTimeout(() => {
-        router.push("/dashboard")
-        router.refresh()
-      }, 2000)
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur d'initiation du paiement")
+      }
+
+      setPaymentId(data.paymentId)
+      setState("waiting_confirmation")
+      startPolling(data.paymentId)
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Une erreur est survenue"
-      console.error(message)
-    } finally {
-      setLoading(false)
+      const message = err instanceof Error ? err.message : "Une erreur inattendue s'est produite"
+      setErrorMessage(message)
+      setState("error")
     }
   }
 
-  if (success) {
+  const simulateConfirmation = useCallback(async () => {
+    if (!paymentId) return
+    try {
+      await fetch("/api/payments/simulate-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId }),
+      })
+    } catch (err) {
+      console.error("Erreur simulation confirmation:", err)
+    }
+  }, [paymentId])
+
+  const retryPayment = () => {
+    stopPolling()
+    setState("idle")
+    setErrorMessage(null)
+    setPaymentId(null)
+  }
+
+  if (state === "completed") {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -106,7 +160,18 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
       transition={{ duration: 0.5 }}
       className="space-y-6 rounded-2xl border border-border bg-card p-6"
     >
-      {/* Détails du paiement */}
+      {state === "error" && (
+        <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">
+            <p>{errorMessage || "Une erreur est survenue"}</p>
+            <Button variant="outline" size="sm" onClick={retryPayment} className="mt-2">
+              Réessayer
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-4">
           <span className="font-medium">Microtaxe de publication</span>
@@ -119,7 +184,6 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
         </div>
       </div>
 
-      {/* MTN Mobile Money */}
       <div className="rounded-xl border border-primary bg-primary/5 p-4 ring-1 ring-primary">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
@@ -135,17 +199,39 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
         </div>
       </div>
 
-      {/* Bouton de confirmation */}
+      <div className="space-y-2">
+        <label htmlFor="phone" className="text-sm font-medium">
+          Numéro MTN Mobile Money
+        </label>
+        <div className="relative">
+          <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="phone"
+            type="tel"
+            placeholder="+229 XX XX XX XX"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            disabled={state !== "idle"}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       <Button
         onClick={handlePayment}
-        disabled={loading}
+        disabled={state === "initiating" || state === "waiting_confirmation" || (state === "idle" && !phoneNumber.trim())}
         className="w-full gap-2"
         size="lg"
       >
-        {loading ? (
+        {state === "initiating" ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Validation en cours...
+            Initialisation...
+          </>
+        ) : state === "waiting_confirmation" ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Confirmation en cours...
           </>
         ) : (
           <>
@@ -155,9 +241,37 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
         )}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground">
-        Une demande de confirmation sera envoyée sur votre numéro MTN.
-      </p>
+      {state === "waiting_confirmation" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="space-y-3"
+        >
+          <div className="rounded-lg bg-amber-500/10 p-3 text-center text-sm text-amber-700">
+            <p>Une demande de confirmation a été envoyée sur votre téléphone MTN.</p>
+            <p className="mt-1 text-xs">Veuillez confirmer le paiement via votre téléphone dans les 2 minutes.</p>
+          </div>
+          <div className="rounded-lg bg-blue-500/10 p-3 text-center">
+            <p className="text-xs text-blue-700 mb-2">
+              Mode simulation — pas de clé API MTN configurée.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={simulateConfirmation}
+              className="gap-2"
+            >
+              Simuler la confirmation
+            </Button>
+          </div>
+        </motion.div>
+      )}
+
+      {state === "idle" && (
+        <p className="text-center text-xs text-muted-foreground">
+          Une demande de confirmation sera envoyée sur votre numéro MTN.
+        </p>
+      )}
     </motion.div>
   )
 }

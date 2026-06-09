@@ -3,18 +3,17 @@ import { createClient } from "@/lib/supabase/server"
 import { PaymentForm } from "@/components/publish/payment-form"
 
 interface PublishPaymentPageProps {
-  searchParams: { listing_id?: string }
+  searchParams: Promise<{ listing_id?: string }>
 }
 
 export default async function PublishPaymentPage({ searchParams }: PublishPaymentPageProps) {
+  const { listing_id: listingId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect("/auth/login")
   }
-
-  const listingId = searchParams.listing_id
 
   // Vérifier que l'annonce existe et appartient à l'utilisateur
   if (listingId) {
@@ -25,14 +24,13 @@ export default async function PublishPaymentPage({ searchParams }: PublishPaymen
       .eq("user_id", user.id)
       .single()
 
-    // Si l'annonce est déjà active, rediriger vers le tableau de bord
-    if (listing?.status === "active") {
-      redirect("/dashboard")
-    }
-
-    // Si l'annonce n'existe pas ou n'appartient pas à l'utilisateur
     if (!listing) {
       redirect("/publish")
+    }
+
+    // Si l'annonce n'est pas en attente de paiement, rediriger
+    if (listing.status !== "pending_payment") {
+      redirect("/dashboard")
     }
   } else {
     // Pas d'ID d'annonce, rediriger vers la publication

@@ -3,30 +3,14 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Upload, Loader2, MapPin, Check } from "lucide-react"
+import { Upload, Loader2, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { getRandomizedCityCoordinates } from "@/lib/geocoding"
-import {
-  BookOpen,
-  FileText,
-  FlaskConical,
-  GraduationCap,
-  NotebookPen,
-  Package,
-} from "lucide-react"
-
-const categoryIcons: Record<string, React.ElementType> = {
-  "book-open": BookOpen,
-  "file-text": FileText,
-  "flask-conical": FlaskConical,
-  "graduation-cap": GraduationCap,
-  "notebook-pen": NotebookPen,
-  "package": Package,
-}
+import { getCategoryIcon } from "@/lib/utils/category"
 
 const conditions = [
   { value: "new", label: "Neuf", description: "Jamais utilisé" },
@@ -39,6 +23,11 @@ const exchangeTypes = [
   { value: "in_person", label: "En Personne" },
   { value: "delivery", label: "Livraison" },
 ]
+
+// Image validation constants
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_IMAGES = 5
 
 interface Category {
   id: string
@@ -56,7 +45,6 @@ export function PublishForm({ categories }: PublishFormProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [photos, setPhotos] = useState<File[]>([])
   
   const [formData, setFormData] = useState({
@@ -150,7 +138,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         condition: formData.condition,
         exchange_type: formData.exchangeType,
         city: formData.city,
-        status: "active",
+        status: "pending_payment",
       }
 
       if (categoryId) {
@@ -223,34 +211,13 @@ export function PublishForm({ categories }: PublishFormProps) {
         }
       }
 
-      // Success - annonce publiée directement
-      setSuccess(true)
-      setTimeout(() => {
-        router.push(`/dashboard`)
-      }, 2000)
+      // Success - rediriger vers la page de paiement
+      router.push(`/publish/payment?listing_id=${listingId}`)
     } catch {
       setError("Une erreur inattendue s'est produite")
     } finally {
       setLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-12 text-center"
-      >
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-          <Check className="h-8 w-8 text-emerald-500" />
-        </div>
-        <h2 className="mb-2 text-xl font-bold">Annonce Publiée !</h2>
-        <p className="text-muted-foreground">
-          Votre annonce est maintenant en ligne. Redirection...
-        </p>
-      </motion.div>
-    )
   }
 
   return (
@@ -308,7 +275,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {categories.map((category) => {
-              const Icon = categoryIcons[category.icon] || Package
+              const Icon = getCategoryIcon(category.icon)
               const isSelected = formData.categoryId === category.id
               return (
                 <button
@@ -339,16 +306,59 @@ export function PublishForm({ categories }: PublishFormProps) {
       {/* Photos */}
       <div className="space-y-2">
         <label htmlFor="photos" className="text-sm font-medium">
-          Photos
+          Photos (max 5, 5MB chacune, JPEG/PNG/WebP/GIF)
         </label>
         <Input
           id="photos"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           multiple
-          onChange={(e) => setPhotos(Array.from(e.target.files || []))}
+          onChange={(e) => {
+            const files = Array.from(e.target.files || [])
+            const validFiles: File[] = []
+            const errors: string[] = []
+
+            for (const file of files) {
+              if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                errors.push(`${file.name}: type non supporté (JPEG, PNG, WebP, GIF uniquement)`)
+                continue
+              }
+              if (file.size > MAX_FILE_SIZE) {
+                errors.push(`${file.name}: taille maximale 5MB`)
+                continue
+              }
+              validFiles.push(file)
+            }
+
+            if (validFiles.length + photos.length > MAX_IMAGES) {
+              errors.push(`Maximum ${MAX_IMAGES} images au total`)
+            }
+
+            if (errors.length > 0) {
+              setError(errors.join('\n'))
+            } else {
+              setError(null)
+              setPhotos([...photos, ...validFiles].slice(0, MAX_IMAGES))
+            }
+          }}
           className="h-12"
         />
+        {photos.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {photos.map((photo, index) => (
+              <span key={index} className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs">
+                {photo.name}
+                <button
+                  type="button"
+                  onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Condition */}
