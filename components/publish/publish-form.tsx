@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Upload, Loader2, MapPin } from "lucide-react"
+import { Upload, Loader2, MapPin, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -74,6 +74,7 @@ export function PublishForm({ categories }: PublishFormProps) {
 
       if (!user) {
         setError("Vous devez être connecté pour publier")
+        console.error("Publish: utilisateur non connecté")
         return
       }
 
@@ -92,11 +93,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         )
 
       if (profileUpsertError) {
-        const extra = [profileUpsertError.details, profileUpsertError.hint, profileUpsertError.code]
-          .filter(Boolean)
-          .join(" | ")
-        setError(extra ? `${profileUpsertError.message} (${extra})` : profileUpsertError.message)
-        return
+        console.error("Publish: échec mise à jour profil (non bloquant):", profileUpsertError)
       }
 
       if (categories.length > 0 && !formData.categoryId) {
@@ -109,7 +106,6 @@ export function PublishForm({ categories }: PublishFormProps) {
         return
       }
 
-      // Vérifier si l'ID de catégorie est un UUID valide (pas un ID par défaut comme "default-1")
       const isValidUUID = (id: string) => {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
         return uuidRegex.test(id)
@@ -117,21 +113,9 @@ export function PublishForm({ categories }: PublishFormProps) {
 
       const categoryId = formData.categoryId && isValidUUID(formData.categoryId) ? formData.categoryId : null
 
-      // Geocode city to get coordinates
       const coords = formData.city ? getRandomizedCityCoordinates(formData.city) : null
 
-      const payload: {
-        user_id: string
-        title: string
-        description: string
-        category_id?: string
-        condition: string
-        exchange_type: string
-        city: string
-        latitude?: number
-        longitude?: number
-        status: string
-      } = {
+      const payload: Record<string, unknown> = {
         user_id: user.id,
         title: formData.title,
         description: formData.description,
@@ -157,6 +141,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         .single()
 
       if (insertError) {
+        console.error("Publish: erreur insertion annonce:", insertError)
         const extra = [insertError.details, insertError.hint, insertError.code]
           .filter(Boolean)
           .join(" | ")
@@ -185,6 +170,7 @@ export function PublishForm({ categories }: PublishFormProps) {
             })
 
             if (uploadError) {
+              console.error("Publish: erreur upload image:", uploadError)
               throw uploadError
             }
 
@@ -201,19 +187,21 @@ export function PublishForm({ categories }: PublishFormProps) {
             .eq("id", listingId)
 
           if (updateError) {
+            console.error("Publish: erreur mise à jour images:", updateError)
             throw updateError
           }
         } catch (err) {
           await supabase.from("listings").delete().eq("id", listingId)
           const message = err instanceof Error ? err.message : "Une erreur inattendue s'est produite"
+          console.error("Publish: échec upload images, annulation création:", message)
           setError(message)
           return
         }
       }
 
-      // Success - rediriger vers la page de paiement
       router.push(`/publish/payment?listing_id=${listingId}`)
-    } catch {
+    } catch (err) {
+      console.error("Publish: erreur inattendue:", err)
       setError("Une erreur inattendue s'est produite")
     } finally {
       setLoading(false)
@@ -229,8 +217,12 @@ export function PublishForm({ categories }: PublishFormProps) {
       className="space-y-6 rounded-2xl border border-border bg-card p-6"
     >
       {error && (
-        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+        <div className="flex items-start gap-3 rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold">Erreur</p>
+            <p className="mt-1 whitespace-pre-wrap">{error}</p>
+          </div>
         </div>
       )}
 
