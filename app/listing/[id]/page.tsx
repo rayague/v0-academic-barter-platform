@@ -11,7 +11,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get listing with related data
   const { data: listing } = await supabase
     .from("listings")
     .select(`
@@ -26,13 +25,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
     notFound()
   }
 
-  // Increment view count (seulement si l'utilisateur n'est pas le propriétaire)
   const isOwner = !!user && listing.user_id === user.id
   if (!isOwner) {
     await supabase.rpc("increment_listing_views", { listing_id: id })
   }
 
-  // Check if favorited
   const { data: favorite } = user
     ? await supabase
         .from("favorites")
@@ -43,11 +40,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
     : { data: null }
 
   return (
-    <ListingDetail 
-      listing={listing} 
-      isFavorited={!!favorite} 
-      isOwner={isOwner}
-      currentUserId={user?.id ?? ""}
-    />
+    <div className="min-h-screen bg-background">
+      <ListingDetail 
+        listing={listing} 
+        isFavorited={!!favorite} 
+        isOwner={isOwner}
+        currentUserId={user?.id ?? ""}
+      />
+    </div>
   )
 }
