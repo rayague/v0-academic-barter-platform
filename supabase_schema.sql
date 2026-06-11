@@ -441,11 +441,7 @@ CREATE POLICY "Participants can view conversations"
 DROP POLICY IF EXISTS "Participants can view conversation participants" ON conversation_participants;
 CREATE POLICY "Participants can view conversation participants"
     ON conversation_participants FOR SELECT
-    USING (EXISTS (
-        SELECT 1 FROM conversation_participants AS cp
-        WHERE cp.conversation_id = conversation_participants.conversation_id
-        AND cp.user_id = auth.uid()
-    ));
+    USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Users can join conversations" ON conversation_participants;
 CREATE POLICY "Users can join conversations"
