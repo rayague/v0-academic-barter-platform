@@ -129,7 +129,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         condition: formData.condition,
         exchange_type: formData.exchangeType,
         city: formData.city,
-        status: "pending_payment",
+        status: "active",
       }
 
       if (categoryId) {
@@ -206,7 +206,7 @@ export function PublishForm({ categories }: PublishFormProps) {
         }
       }
 
-      router.push(`/publish/payment?listing_id=${listingId}`)
+      router.push("/dashboard")
     } catch (err) {
       console.error("Publish: erreur inattendue:", err)
       setError("Une erreur inattendue s'est produite")
