@@ -83,23 +83,7 @@ export async function ExploreGrid({ params }: ExploreGridProps) {
       query = query.order("created_at", { ascending: false })
   }
 
-  const { data: listings, error: queryError } = await query.limit(20)
-
-  if (queryError) {
-    return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-destructive/50 bg-destructive/10 py-16">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/20">
-          <Search className="h-6 w-6 text-destructive" />
-        </div>
-        <h3 className="mb-1 font-medium text-destructive">Erreur de chargement</h3>
-        <p className="max-w-md text-center text-sm text-muted-foreground">
-          {queryError.message}
-          {queryError.details && <> — {queryError.details}</>}
-          {queryError.hint && <><br />{queryError.hint}</>}
-        </p>
-      </div>
-    )
-  }
+  const { data: listings } = await query.limit(20)
 
   if (!listings || listings.length === 0) {
     return (
@@ -107,7 +91,7 @@ export async function ExploreGrid({ params }: ExploreGridProps) {
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
           <Search className="h-6 w-6 text-muted-foreground" />
         </div>
-        <h3 className="mb-1 font-medium">Aucune annonce trouvée ({listings?.length ?? 'null'})</h3>
+        <h3 className="mb-1 font-medium">Aucune annonce trouvée</h3>
         <p className="text-center text-sm text-muted-foreground">
           Essayez de modifier vos filtres ou votre recherche
         </p>
@@ -116,13 +100,10 @@ export async function ExploreGrid({ params }: ExploreGridProps) {
   }
 
   return (
-    <div>
-      <p className="mb-2 text-xs text-muted-foreground">{listings.length} annonce(s) trouvée(s)</p>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {listings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} />
-        ))}
-      </div>
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {listings.map((listing) => (
+        <ListingCard key={listing.id} listing={listing} />
+      ))}
     </div>
   )
 }
