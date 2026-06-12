@@ -36,13 +36,13 @@ export default function LoginPage() {
       }
 
       // Redirect admins to /admin/dashboard, regular users to /dashboard
-      const { data: adminData } = await supabase
-        .from("admins")
-        .select("id")
-        .eq("user_id", data.user?.id)
-        .maybeSingle()
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", data.user?.id)
+        .single()
 
-      router.push(adminData ? "/admin/dashboard" : "/dashboard")
+      router.push(profileData?.is_admin ? "/admin/dashboard" : "/dashboard")
       router.refresh()
     } catch {
       setError("Une erreur inattendue s'est produite")

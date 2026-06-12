@@ -37,23 +37,16 @@ export default function AdminLoginPage() {
         return
       }
 
-      // Check if user is admin
-      const { data: adminData, error: adminError } = await supabase
-        .from("admins")
-        .select("*")
-        .eq("user_id", data.user?.id)
+      // Check if user is admin via profiles.is_admin
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", data.user?.id)
         .single()
 
-      if (adminError || !adminData) {
-        // Logout if not admin
+      if (profileError || !profileData?.is_admin) {
         await supabase.auth.signOut()
         setError("Accès refusé - Vous n'êtes pas administrateur")
-        return
-      }
-
-      if (!adminData.is_active) {
-        await supabase.auth.signOut()
-        setError("Votre compte administrateur est désactivé")
         return
       }
 

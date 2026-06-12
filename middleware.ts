@@ -41,13 +41,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    const { data: adminData } = await supabase
-      .from('admins')
-      .select('is_active')
-      .eq('user_id', session.user.id)
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', session.user.id)
       .single()
 
-    if (!adminData || !adminData.is_active) {
+    if (!profileData || !profileData.is_admin) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin/auth/login'
       return NextResponse.redirect(url)

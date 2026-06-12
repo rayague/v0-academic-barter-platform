@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     avatar_url TEXT,
     average_rating DECIMAL(3,2) DEFAULT 0.0,
     total_exchanges INTEGER DEFAULT 0,
+    is_admin BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -580,44 +581,18 @@ CREATE POLICY "Admins can update reports"
 -- Admins: Only admins can view, self-insert for signup
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
--- Function sécurité DEFINER pour éviter la récursion RLS
-CREATE OR REPLACE FUNCTION public.is_active_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.admins WHERE user_id = auth.uid() AND is_active = true
-  );
-$$;
-
-CREATE OR REPLACE FUNCTION public.is_super_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.admins WHERE user_id = auth.uid() AND role = 'super_admin'
-  );
-$$;
-
+-- Minimal non-recursive policies for admins table
 DROP POLICY IF EXISTS "Admins can view admins" ON admins;
 DROP POLICY IF EXISTS "Admins can view themselves" ON admins;
 DROP POLICY IF EXISTS "Super admins can view all admins" ON admins;
-CREATE POLICY "Admins can view admins"
-    ON admins FOR SELECT
-    USING (auth.uid() = user_id OR public.is_active_admin());
-
+DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
 DROP POLICY IF EXISTS "Admins can signup" ON admins;
-CREATE POLICY "Admins can signup"
-    ON admins FOR INSERT
-    WITH CHECK (user_id = auth.uid());
 
-DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
-DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
-CREATE POLICY "Super admin can update admins"
-    ON admins FOR UPDATE
-    USING (public.is_super_admin());
+CREATE POLICY "admins_self_select" ON admins FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "admins_signup_insert" ON admins FOR INSERT
+WITH CHECK (user_id = auth.uid());
 
 -- User bans: Only admins can view and manage
 ALTER TABLE user_bans ENABLE ROW LEVEL SECURITY;
