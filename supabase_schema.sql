@@ -571,12 +571,16 @@ CREATE POLICY "Users can create reports"
 DROP POLICY IF EXISTS "Admins can view all reports" ON reports;
 CREATE POLICY "Admins can view all reports"
     ON reports FOR SELECT
-    USING (public.is_active_admin());
+    USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 DROP POLICY IF EXISTS "Admins can update reports" ON reports;
 CREATE POLICY "Admins can update reports"
     ON reports FOR UPDATE
-    USING (public.is_active_admin());
+    USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 -- Admins: Only admins can view, self-insert for signup
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
@@ -600,17 +604,23 @@ ALTER TABLE user_bans ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admins can view user bans" ON user_bans;
 CREATE POLICY "Admins can view user bans"
     ON user_bans FOR SELECT
-    USING (public.is_active_admin());
+    USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 DROP POLICY IF EXISTS "Admins can insert user bans" ON user_bans;
 CREATE POLICY "Admins can insert user bans"
     ON user_bans FOR INSERT
-    WITH CHECK (public.is_active_admin());
+    WITH CHECK (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 DROP POLICY IF EXISTS "Admins can update user bans" ON user_bans;
 CREATE POLICY "Admins can update user bans"
     ON user_bans FOR UPDATE
-    USING (public.is_active_admin());
+    USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 -- =====================================================
 -- FUNCTION: Auto-create profile on user signup

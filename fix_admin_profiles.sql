@@ -18,5 +18,35 @@ USING (auth.uid() = user_id);
 CREATE POLICY "admins_signup_insert" ON admins FOR INSERT
 WITH CHECK (user_id = auth.uid());
 
--- Keep existing update policy (only if it exists and is not recursive)
--- We'll handle admin management via profiles.is_admin + service_role key
+-- 5. Fix reports and user_bans policies (they referenced non-existent function)
+DROP POLICY IF EXISTS "Admins can view all reports" ON reports;
+DROP POLICY IF EXISTS "Admins can update reports" ON reports;
+
+CREATE POLICY "Admins can view all reports" ON reports FOR SELECT
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+CREATE POLICY "Admins can update reports" ON reports FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+DROP POLICY IF EXISTS "Admins can view user bans" ON user_bans;
+DROP POLICY IF EXISTS "Admins can insert user bans" ON user_bans;
+DROP POLICY IF EXISTS "Admins can update user bans" ON user_bans;
+
+CREATE POLICY "Admins can view user bans" ON user_bans FOR SELECT
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+CREATE POLICY "Admins can insert user bans" ON user_bans FOR INSERT
+WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+CREATE POLICY "Admins can update user bans" ON user_bans FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
