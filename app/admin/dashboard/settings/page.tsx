@@ -34,10 +34,13 @@ export default function AdminSettingsPage() {
         .from("admins")
         .select("*")
         .eq("user_id", sessionData.session.user.id)
-        .single()
+        .maybeSingle()
 
-      if (error) throw error
-      setAdmin(data)
+      if (error || !data) {
+        console.warn("Could not fetch admin profile from admins table, checking profiles.is_admin")
+      } else {
+        setAdmin(data)
+      }
     } catch (err) {
       console.error("Error fetching admin profile:", err)
     } finally {

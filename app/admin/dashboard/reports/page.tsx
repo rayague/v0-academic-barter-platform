@@ -64,7 +64,7 @@ export default function AdminReportsPage() {
         .from("admins")
         .select("id")
         .eq("user_id", sessionData.session?.user.id)
-        .single()
+        .maybeSingle()
 
       const { error } = await supabase
         .from("reports")

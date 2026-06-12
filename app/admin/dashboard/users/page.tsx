@@ -69,7 +69,7 @@ export default function AdminUsersPage() {
         .from("admins")
         .select("id")
         .eq("user_id", sessionData.session?.user.id)
-        .single()
+        .maybeSingle()
 
       const { error } = await supabase.from("user_bans").insert({
         user_id: userId,
