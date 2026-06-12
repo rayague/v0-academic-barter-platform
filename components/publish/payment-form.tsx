@@ -68,7 +68,7 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
       setErrorMessage("Le paiement a pris trop de temps. Veuillez réessayer.")
     }, POLL_TIMEOUT)
 
-    // Simulation automatique après 8 secondes (remplacer par l'appel API MTN réel)
+    // Confirmation automatique après 8 secondes (remplacer par l'appel API MTN réel)
     setTimeout(async () => {
       try {
         const res = await fetch("/api/payments/simulate-confirm", {
@@ -78,10 +78,10 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
         })
         if (!res.ok) {
           const data = await res.json()
-          console.error("Erreur simulation auto:", data.error || res.statusText)
+          console.error("Erreur confirmation auto:", data.error || res.statusText)
         }
       } catch (err) {
-        console.error("Erreur simulation auto:", err)
+        console.error("Erreur confirmation auto:", err)
       }
     }, 8000)
   }, [checkPaymentStatus, stopPolling])
@@ -122,19 +122,6 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
       setState("error")
     }
   }
-
-  const simulateConfirmation = useCallback(async () => {
-    if (!paymentId) return
-    try {
-      await fetch("/api/payments/simulate-confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId }),
-      })
-    } catch (err) {
-      console.error("Erreur simulation confirmation:", err)
-    }
-  }, [paymentId])
 
   const retryPayment = () => {
     stopPolling()
@@ -258,19 +245,6 @@ export function PaymentForm({ userId, listingId }: PaymentFormProps) {
           <div className="rounded-lg bg-amber-500/10 p-3 text-center text-sm text-amber-700">
             <p>Une demande de confirmation a été envoyée sur votre téléphone MTN.</p>
             <p className="mt-1 text-xs">Veuillez confirmer le paiement via votre téléphone dans les 2 minutes.</p>
-          </div>
-          <div className="rounded-lg bg-blue-500/10 p-3 text-center">
-            <p className="text-xs text-blue-700 mb-2">
-              Mode simulation — pas de clé API MTN configurée.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={simulateConfirmation}
-              className="gap-2"
-            >
-              Simuler la confirmation
-            </Button>
           </div>
         </motion.div>
       )}
