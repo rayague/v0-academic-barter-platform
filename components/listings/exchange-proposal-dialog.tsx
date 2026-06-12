@@ -176,7 +176,7 @@ export function ExchangeProposalDialog({
       }
 
       // Créer une notification pour le propriétaire
-      const { error: notifError, data: notifData } = await supabase
+      const { error: notifError } = await supabase
         .from('notifications')
         .insert({
           recipient_id: receiverId,
@@ -191,7 +191,6 @@ export function ExchangeProposalDialog({
             contact_phone: contactPhone || null,
           },
         })
-        .select()
 
       if (notifError) {
         console.error('❌ ERREUR NOTIFICATION:', notifError.message)
@@ -203,8 +202,6 @@ export function ExchangeProposalDialog({
           error_details: notifError.details,
         })
         toast.warning('Notification non envoyée (erreur interne), mais échange créé')
-      } else {
-        console.log('✅ NOTIFICATION CRÉÉE:', notifData)
       }
 
       setSuccess(true)
