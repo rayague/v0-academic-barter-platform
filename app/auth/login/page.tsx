@@ -25,7 +25,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -35,7 +35,14 @@ export default function LoginPage() {
         return
       }
 
-      router.push("/dashboard")
+      // Redirect admins to /admin/dashboard, regular users to /dashboard
+      const { data: adminData } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("user_id", data.user?.id)
+        .maybeSingle()
+
+      router.push(adminData ? "/admin/dashboard" : "/dashboard")
       router.refresh()
     } catch {
       setError("Une erreur inattendue s'est produite")
