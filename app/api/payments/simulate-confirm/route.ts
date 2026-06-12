@@ -76,7 +76,13 @@ export async function POST(request: NextRequest) {
 
         if (listingError) {
           console.error('Erreur activation annonce:', listingError)
-        } else {
+          return NextResponse.json(
+            { error: 'Paiement confirmé mais échec activation annonce' },
+            { status: 500 }
+          )
+        }
+
+        try {
           await supabase.from('notifications').insert({
             recipient_id: payment.user_id,
             type: 'listing_published',
@@ -86,6 +92,8 @@ export async function POST(request: NextRequest) {
               payment_id: payment.id,
             },
           })
+        } catch (notifErr) {
+          console.error('Erreur notification (non bloquant):', notifErr)
         }
       }
     }
