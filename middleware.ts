@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('is_admin')
       .eq('id', session.user.id)
-      .single()
+      .maybeSingle()
 
     if (!profileData || !profileData.is_admin) {
       const url = request.nextUrl.clone()

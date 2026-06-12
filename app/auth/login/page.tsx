@@ -40,7 +40,7 @@ export default function LoginPage() {
         .from("profiles")
         .select("is_admin")
         .eq("id", data.user?.id)
-        .single()
+        .maybeSingle()
 
       router.push(profileData?.is_admin ? "/admin/dashboard" : "/dashboard")
       router.refresh()

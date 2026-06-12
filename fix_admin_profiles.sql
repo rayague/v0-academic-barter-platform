@@ -1,9 +1,10 @@
 -- 1. Add is_admin column to profiles (safe, won't break existing code)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
 
--- 2. Mark admin.dyo@dyo.com as admin in profiles
-UPDATE profiles SET is_admin = true
-WHERE email = 'admin.dyo@dyo.com';
+-- 2. Ensure admin user has a profile with is_admin=true (insert if missing)
+INSERT INTO profiles (id, email, is_admin)
+SELECT id, email, true FROM auth.users WHERE email = 'admin.dyo@dyo.com'
+ON CONFLICT (id) DO UPDATE SET is_admin = true;
 
 -- 3. Drop ALL recursive policies on admins table to stop 500 errors
 DROP POLICY IF EXISTS "Admins can view admins" ON admins;

@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
         .from("profiles")
         .select("is_admin")
         .eq("id", data.user?.id)
-        .single()
+        .maybeSingle()
 
       if (profileError || !profileData?.is_admin) {
         await supabase.auth.signOut()
