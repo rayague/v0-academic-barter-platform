@@ -55,3 +55,16 @@ CREATE POLICY "Admins can update user bans" ON user_bans FOR UPDATE
 USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
 );
+
+-- 6. Add admin policies for listings (approve, archive, delete)
+DROP POLICY IF EXISTS "Admins can update any listing" ON listings;
+CREATE POLICY "Admins can update any listing" ON listings FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+
+DROP POLICY IF EXISTS "Admins can delete any listing" ON listings;
+CREATE POLICY "Admins can delete any listing" ON listings FOR DELETE
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);

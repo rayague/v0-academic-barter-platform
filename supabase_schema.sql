@@ -415,6 +415,18 @@ DROP POLICY IF EXISTS "Users can delete own listings" ON listings;
 CREATE POLICY "Users can delete own listings"
     ON listings FOR DELETE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can update any listing" ON listings;
+CREATE POLICY "Admins can update any listing"
+    ON listings FOR UPDATE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
+
+DROP POLICY IF EXISTS "Admins can delete any listing" ON listings;
+CREATE POLICY "Admins can delete any listing"
+    ON listings FOR DELETE USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
+
 -- Favorites: Users can manage their own
 DROP POLICY IF EXISTS "Users can view own favorites" ON favorites;
 CREATE POLICY "Users can view own favorites"

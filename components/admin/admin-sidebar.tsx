@@ -13,6 +13,8 @@ import {
   Users,
   List,
   Lock,
+  Folder,
+  Shield,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -23,6 +25,8 @@ const menuItems = [
   { label: "Annonces", href: "/admin/dashboard/listings", icon: List },
   { label: "Signalements", href: "/admin/dashboard/reports", icon: AlertCircle },
   { label: "Comptes", href: "/admin/dashboard/users", icon: Users },
+  { label: "Catégories", href: "/admin/dashboard/categories", icon: Folder },
+  { label: "Administrateurs", href: "/admin/dashboard/admins", icon: Shield },
   { label: "Paramètres", href: "/admin/dashboard/settings", icon: Settings },
 ]
 
