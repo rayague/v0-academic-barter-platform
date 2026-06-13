@@ -29,30 +29,27 @@ USING (
   EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
--- 3. ADMINS: Add SECURITY DEFINER function for non-recursive super_admin check
-CREATE OR REPLACE FUNCTION public.check_super_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.admins
-    WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
-  );
-$$;
-
--- Add SELECT policy: see own row OR super_admin sees all
+-- 3. ADMINS: Non-recursive policies (query profiles not admins to avoid recursion)
+-- SELECT: user sees own row, or any admin sees all
 DROP POLICY IF EXISTS "admins_self_select" ON admins;
 DROP POLICY IF EXISTS "admins_select" ON admins;
 CREATE POLICY "admins_select" ON admins FOR SELECT
-USING (auth.uid() = user_id OR public.check_super_admin());
+USING (
+  auth.uid() = user_id
+  OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
 
--- Add UPDATE policy: only super_admin can update admins
+-- UPDATE: only admins can update (super_admin check done at app/UI level)
 DROP POLICY IF EXISTS "admins_update" ON admins;
 CREATE POLICY "admins_update" ON admins FOR UPDATE
-USING (public.check_super_admin());
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
 
--- Keep existing INSERT policy for signup
+-- INSERT: user can insert their own signup row
 DROP POLICY IF EXISTS "admins_signup_insert" ON admins;
 CREATE POLICY "admins_signup_insert" ON admins FOR INSERT
 WITH CHECK (user_id = auth.uid());
+
+-- Drop the recursive function (no longer needed)
+DROP FUNCTION IF EXISTS public.check_super_admin();

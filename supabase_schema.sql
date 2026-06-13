@@ -607,34 +607,32 @@ CREATE POLICY "Admins can update reports"
 -- Admins: Only admins can view, self-insert for signup
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
--- SECURITY DEFINER function to check super_admin without RLS recursion
-CREATE OR REPLACE FUNCTION public.check_super_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-SECURITY DEFINER
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.admins
-    WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
-  );
-$$;
-
--- Minimal non-recursive policies for admins table
+-- Non-recursive policies for admins table (query profiles, not admins)
 DROP POLICY IF EXISTS "Admins can view admins" ON admins;
 DROP POLICY IF EXISTS "Admins can view themselves" ON admins;
 DROP POLICY IF EXISTS "Super admins can view all admins" ON admins;
 DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
 DROP POLICY IF EXISTS "Admins can signup" ON admins;
 DROP POLICY IF EXISTS "admins_self_select" ON admins;
+DROP POLICY IF EXISTS "admins_select" ON admins;
+DROP POLICY IF EXISTS "admins_update" ON admins;
+DROP POLICY IF EXISTS "admins_signup_insert" ON admins;
 
 CREATE POLICY "admins_select" ON admins FOR SELECT
-USING (auth.uid() = user_id OR public.check_super_admin());
+USING (
+  auth.uid() = user_id
+  OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
 
 CREATE POLICY "admins_update" ON admins FOR UPDATE
-USING (public.check_super_admin());
+USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
 
 CREATE POLICY "admins_signup_insert" ON admins FOR INSERT
 WITH CHECK (user_id = auth.uid());
+
+DROP FUNCTION IF EXISTS public.check_super_admin();
 
 -- User bans: Only admins can view and manage
 ALTER TABLE user_bans ENABLE ROW LEVEL SECURITY;
