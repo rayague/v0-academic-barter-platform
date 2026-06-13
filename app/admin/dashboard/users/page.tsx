@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Ban, CheckCircle, Loader2, X } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,10 +29,13 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const { toast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
   const [banReason, setBanReason] = useState<Record<string, string>>({})
+  const [banError, setBanError] = useState<string | null>(null)
+  const [unbanId, setUnbanId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchUsers()
@@ -55,8 +59,9 @@ export default function AdminUsersPage() {
   }
 
   const handleBanUser = async (userId: string, reason: string) => {
+    setBanError(null)
     if (!reason.trim()) {
-      alert("Veuillez entrer une raison pour le ban")
+      setBanError("Veuillez entrer une raison pour le bannissement")
       return
     }
 
@@ -80,10 +85,12 @@ export default function AdminUsersPage() {
 
       if (error) throw error
 
+      toast({ title: "Utilisateur banni", description: "L'utilisateur a été banni avec succès." })
       setBanReason({...banReason, [userId]: ""})
-      fetchUsers() // Refresh users list
+      fetchUsers()
     } catch (err) {
       console.error("Error banning user:", err)
+      toast({ title: "Erreur", description: "Impossible de bannir l'utilisateur.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -97,11 +104,15 @@ export default function AdminUsersPage() {
         .from("user_bans")
         .update({ is_active: false })
         .eq("user_id", userId)
+        .eq("is_active", true)
 
       if (error) throw error
-      fetchUsers() // Refresh users list
+      toast({ title: "Utilisateur débanni", description: "L'utilisateur peut de nouveau utiliser la plateforme." })
+      setUnbanId(null)
+      fetchUsers()
     } catch (err) {
       console.error("Error unbanning user:", err)
+      toast({ title: "Erreur", description: "Impossible de débannir l'utilisateur.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -175,14 +186,30 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           {isBanned(user) ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleUnbanUser(user.id)}
-                              disabled={updating === user.id}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
+                            <AlertDialog open={unbanId === user.id} onOpenChange={(open) => setUnbanId(open ? user.id : null)}>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={updating === user.id}
+                                  aria-label="Débannir l'utilisateur"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogTitle>Débannir cet utilisateur ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  L'utilisateur pourra de nouveau utiliser la plateforme.
+                                </AlertDialogDescription>
+                                <div className="flex gap-3">
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleUnbanUser(user.id)}>
+                                    Débannir
+                                  </AlertDialogAction>
+                                </div>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           ) : (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -191,6 +218,7 @@ export default function AdminUsersPage() {
                                   variant="outline"
                                   className="text-destructive"
                                   disabled={updating === user.id}
+                                  aria-label="Bannir l'utilisateur"
                                 >
                                   <Ban className="h-4 w-4" />
                                 </Button>
@@ -198,13 +226,17 @@ export default function AdminUsersPage() {
                               <AlertDialogContent>
                                 <AlertDialogTitle>Bannir cet utilisateur ?</AlertDialogTitle>
                                 <AlertDialogDescription>
+                                  {banError && (
+                                    <p className="mb-2 text-sm text-destructive">{banError}</p>
+                                  )}
                                   Entrez une raison pour le bannissement
                                 </AlertDialogDescription>
                                 <textarea
                                   value={banReason[user.id] || ""}
-                                  onChange={(e) =>
+                                  onChange={(e) => {
                                     setBanReason({...banReason, [user.id]: e.target.value})
-                                  }
+                                    setBanError(null)
+                                  }}
                                   placeholder="Raison du bannissement..."
                                   className="w-full rounded border p-2 text-sm"
                                   rows={3}

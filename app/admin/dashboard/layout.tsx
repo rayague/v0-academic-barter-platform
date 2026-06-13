@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function AdminLayout({
   children,
@@ -22,6 +23,7 @@ export default function AdminLayout({
         </div>
       )}
       {children}
+      <Toaster />
     </>
   )
 }

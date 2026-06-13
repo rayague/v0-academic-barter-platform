@@ -5,6 +5,16 @@ import { createClient } from "@/lib/supabase/client"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Loader2, Shield, ShieldCheck, ShieldX } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Admin {
   id: string
@@ -18,6 +28,7 @@ interface Admin {
 }
 
 export default function AdminAdminsPage() {
+  const { toast } = useToast()
   const [admins, setAdmins] = useState<Admin[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
@@ -58,6 +69,8 @@ export default function AdminAdminsPage() {
 
       if (error) throw error
 
+      toast({ title: isActive ? "Admin désactivé" : "Admin activé", description: `L'administrateur a été ${isActive ? "désactivé" : "activé"}.` })
+
       // Also update profiles.is_admin
       const admin = admins.find(a => a.id === adminId)
       if (admin) {
@@ -70,6 +83,7 @@ export default function AdminAdminsPage() {
       fetchAdmins()
     } catch (err) {
       console.error("Error toggling admin status:", err)
+      toast({ title: "Erreur", description: "Impossible de modifier le statut.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -165,14 +179,34 @@ export default function AdminAdminsPage() {
                       </td>
                       {isSuperAdmin && admin.user_id !== currentUserId && (
                         <td className="px-6 py-4">
-                          <Button
-                            size="sm"
-                            variant={admin.is_active ? "outline" : "default"}
-                            onClick={() => handleToggleActive(admin.id, admin.is_active)}
-                            disabled={updating === admin.id}
-                          >
-                            {admin.is_active ? "Désactiver" : "Activer"}
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant={admin.is_active ? "outline" : "default"}
+                                disabled={updating === admin.id}
+                                aria-label={admin.is_active ? "Désactiver l'administrateur" : "Activer l'administrateur"}
+                              >
+                                {admin.is_active ? "Désactiver" : "Activer"}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogTitle>
+                                {admin.is_active ? "Désactiver cet administrateur ?" : "Activer cet administrateur ?"}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {admin.is_active
+                                  ? "L'administrateur ne pourra plus accéder au panneau d'administration."
+                                  : "L'administrateur pourra de nouveau accéder au panneau d'administration."}
+                              </AlertDialogDescription>
+                              <div className="flex gap-3">
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleToggleActive(admin.id, admin.is_active)}>
+                                  Confirmer
+                                </AlertDialogAction>
+                              </div>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </td>
                       )}
                     </tr>

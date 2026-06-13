@@ -4,7 +4,8 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
-import { Trash2, Eye, CheckCircle, X, Loader2 } from "lucide-react"
+import { Trash2, Eye, CheckCircle, X, Loader2, ThumbsUp } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ interface Listing {
 }
 
 export default function AdminListingsPage() {
+  const { toast } = useToast()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
@@ -64,10 +66,12 @@ export default function AdminListingsPage() {
         .eq("id", id)
 
       if (error) throw error
-      
+
+      toast({ title: "Annonce approuvée", description: "L'annonce est maintenant visible sur la plateforme." })
       setListings(listings.map(l => l.id === id ? {...l, status: "active"} : l))
     } catch (err) {
       console.error("Error approving listing:", err)
+      toast({ title: "Erreur", description: "Impossible d'approuver l'annonce.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -83,10 +87,12 @@ export default function AdminListingsPage() {
         .eq("id", id)
 
       if (error) throw error
-      
+
+      toast({ title: "Annonce archivée", description: "L'annonce a été masquée de la plateforme." })
       setListings(listings.map(l => l.id === id ? {...l, status: "archived"} : l))
     } catch (err) {
       console.error("Error archiving listing:", err)
+      toast({ title: "Erreur", description: "Impossible d'archiver l'annonce.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -102,13 +108,27 @@ export default function AdminListingsPage() {
         .eq("id", id)
 
       if (error) throw error
-      
+
+      toast({ title: "Annonce supprimée", description: "L'annonce a été définitivement supprimée." })
       setListings(listings.filter(l => l.id !== id))
     } catch (err) {
       console.error("Error deleting listing:", err)
+      toast({ title: "Erreur", description: "Impossible de supprimer l'annonce.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      active: "Active",
+      archived: "Archivée",
+      reserved: "Réservée",
+      completed: "Terminée",
+      pending_payment: "En attente de paiement",
+      pending: "En attente",
+    }
+    return labels[status] || status
   }
 
   const getStatusColor = (status: string) => {
@@ -121,6 +141,9 @@ export default function AdminListingsPage() {
         return "bg-blue-100 text-blue-800"
       case "completed":
         return "bg-purple-100 text-purple-800"
+      case "pending_payment":
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
       default:
         return "bg-slate-100 text-slate-800"
     }
@@ -173,21 +196,64 @@ export default function AdminListingsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(listing.status)}`}>
-                          {listing.status}
+                          {getStatusLabel(listing.status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">{listing.city}</td>
                       <td className="px-6 py-4 text-sm">{listing.views}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleArchive(listing.id)}
-                            disabled={updating === listing.id}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          {listing.status === "pending_payment" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="bg-green-600 hover:bg-green-700"
+                                  disabled={updating === listing.id}
+                                  aria-label="Approuver l'annonce"
+                                >
+                                  <ThumbsUp className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogTitle>Approuver l'annonce ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  L'annonce sera rendue visible sur la plateforme.
+                                </AlertDialogDescription>
+                                <div className="flex gap-3">
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleApprove(listing.id)}>
+                                    Approuver
+                                  </AlertDialogAction>
+                                </div>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={updating === listing.id}
+                                aria-label="Archiver l'annonce"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogTitle>Archiver l'annonce ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                L'annonce sera masquée de la plateforme. Vous pourrez la réactiver plus tard.
+                              </AlertDialogDescription>
+                              <div className="flex gap-3">
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleArchive(listing.id)}>
+                                  Archiver
+                                </AlertDialogAction>
+                              </div>
+                            </AlertDialogContent>
+                          </AlertDialog>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -195,6 +261,7 @@ export default function AdminListingsPage() {
                                 variant="outline"
                                 className="text-destructive"
                                 disabled={updating === listing.id}
+                                aria-label="Supprimer l'annonce"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

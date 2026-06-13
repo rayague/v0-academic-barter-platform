@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, X, Loader2, ChevronDown } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   Select,
   SelectContent,
@@ -12,6 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Report {
   id: string
@@ -27,11 +37,13 @@ interface Report {
 }
 
 export default function AdminReportsPage() {
+  const { toast } = useToast()
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [notes, setNotes] = useState<Record<string, string>>({})
+  const [confirmAction, setConfirmAction] = useState<{ id: string; status: string } | null>(null)
 
   useEffect(() => {
     fetchReports()
@@ -78,11 +90,14 @@ export default function AdminReportsPage() {
 
       if (error) throw error
 
+      const label = newStatus === "resolved" ? "résolu" : newStatus === "dismissed" ? "rejeté" : "mis à jour"
+      toast({ title: "Signalement " + label, description: "Le statut du signalement a été modifié." })
       setReports(reports.map(r => r.id === id ? {...r, status: newStatus} : r))
       setNotes({...notes, [id]: ""})
       setExpandedId(null)
     } catch (err) {
       console.error("Error updating report:", err)
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le signalement.", variant: "destructive" })
     } finally {
       setUpdating(null)
     }
@@ -193,11 +208,11 @@ export default function AdminReportsPage() {
                         <Select
                           value={report.status}
                           onValueChange={(value) =>
-                            handleStatusChange(report.id, value)
+                            value !== report.status && setConfirmAction({ id: report.id, status: value })
                           }
                           disabled={updating === report.id}
                         >
-                          <SelectTrigger className="w-40">
+                          <SelectTrigger className="w-40" aria-label="Changer le statut">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -209,23 +224,50 @@ export default function AdminReportsPage() {
                         </Select>
 
                         <Button
-                          onClick={() => handleStatusChange(report.id, "resolved")}
+                          onClick={() => setConfirmAction({ id: report.id, status: "resolved" })}
                           disabled={updating === report.id}
                           className="bg-green-600 hover:bg-green-700"
+                          aria-label="Résoudre le signalement"
                         >
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Résoudre
                         </Button>
 
                         <Button
-                          onClick={() => handleStatusChange(report.id, "dismissed")}
+                          onClick={() => setConfirmAction({ id: report.id, status: "dismissed" })}
                           disabled={updating === report.id}
                           variant="outline"
+                          aria-label="Rejeter le signalement"
                         >
                           <X className="mr-2 h-4 w-4" />
                           Rejeter
                         </Button>
                       </div>
+
+                      {/* Shared confirmation dialog */}
+                      <AlertDialog open={!!confirmAction} onOpenChange={(open) => { if (!open) setConfirmAction(null) }}>
+                        <AlertDialogContent>
+                          <AlertDialogTitle>
+                            {confirmAction?.status === "resolved" ? "Résoudre le signalement ?" :
+                             confirmAction?.status === "dismissed" ? "Rejeter le signalement ?" :
+                             "Confirmer le changement ?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {confirmAction?.status === "resolved" ? "Le signalement sera marqué comme résolu." :
+                             confirmAction?.status === "dismissed" ? "Le signalement sera rejeté." :
+                             "Le statut du signalement sera modifié."}
+                          </AlertDialogDescription>
+                          <div className="flex gap-3">
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => {
+                              if (confirmAction) handleStatusChange(confirmAction.id, confirmAction.status)
+                              setConfirmAction(null)
+                            }}>
+                              Confirmer
+                            </AlertDialogAction>
+                          </div>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   )}
                 </div>

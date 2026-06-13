@@ -6,6 +6,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2, Plus, Pencil, Trash2, X, Check } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +48,7 @@ const COLOR_OPTIONS = [
 ]
 
 export default function AdminCategoriesPage() {
+  const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [editId, setEditId] = useState<string | null>(null)
@@ -90,6 +92,7 @@ export default function AdminCategoriesPage() {
         color: newColor,
       })
       if (error) throw error
+      toast({ title: "Catégorie ajoutée", description: "La nouvelle catégorie a été créée." })
       setShowAdd(false)
       setNewName("")
       setNewNameFr("")
@@ -98,6 +101,7 @@ export default function AdminCategoriesPage() {
       fetchCategories()
     } catch (err) {
       console.error("Error adding category:", err)
+      toast({ title: "Erreur", description: "Impossible d'ajouter la catégorie.", variant: "destructive" })
     } finally {
       setSaving(false)
     }
@@ -117,10 +121,12 @@ export default function AdminCategoriesPage() {
         })
         .eq("id", id)
       if (error) throw error
+      toast({ title: "Catégorie modifiée", description: "La catégorie a été mise à jour." })
       setEditId(null)
       fetchCategories()
     } catch (err) {
       console.error("Error updating category:", err)
+      toast({ title: "Erreur", description: "Impossible de modifier la catégorie.", variant: "destructive" })
     } finally {
       setSaving(false)
     }
@@ -131,9 +137,11 @@ export default function AdminCategoriesPage() {
       const supabase = createClient()
       const { error } = await supabase.from("categories").delete().eq("id", id)
       if (error) throw error
+      toast({ title: "Catégorie supprimée", description: "La catégorie a été supprimée." })
       fetchCategories()
     } catch (err) {
       console.error("Error deleting category:", err)
+      toast({ title: "Erreur", description: "Impossible de supprimer la catégorie.", variant: "destructive" })
     }
   }
 
@@ -225,12 +233,12 @@ export default function AdminCategoriesPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => startEdit(cat)}>
+                        <Button size="sm" variant="outline" onClick={() => startEdit(cat)} aria-label="Modifier la catégorie">
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="outline" className="text-destructive">
+                            <Button size="sm" variant="outline" className="text-destructive" aria-label="Supprimer la catégorie">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>

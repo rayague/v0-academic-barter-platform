@@ -266,8 +266,11 @@ CREATE TABLE IF NOT EXISTS reports (
     listing_id UUID REFERENCES listings(id) ON DELETE SET NULL,
     reason TEXT NOT NULL,
     description TEXT,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'reviewed', 'resolved', 'dismissed')),
+    report_type TEXT NOT NULL DEFAULT 'other',
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_review', 'resolved', 'dismissed')),
     admin_notes TEXT,
+    resolved_by UUID REFERENCES admins(id) ON DELETE SET NULL,
+    resolved_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -482,11 +485,18 @@ CREATE POLICY "Participants can send messages"
         )
     );
 
--- Exchanges: Involved users can view
+-- Exchanges: Involved users can view, admins can view all
 DROP POLICY IF EXISTS "Users can view own exchanges" ON exchanges;
 CREATE POLICY "Users can view own exchanges"
     ON exchanges FOR SELECT
     USING (auth.uid() = giver_id OR auth.uid() = receiver_id);
+
+DROP POLICY IF EXISTS "Admins can view all exchanges" ON exchanges;
+CREATE POLICY "Admins can view all exchanges"
+    ON exchanges FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+    );
 
 DROP POLICY IF EXISTS "Users can create exchanges" ON exchanges;
 CREATE POLICY "Users can create exchanges"
@@ -597,15 +607,31 @@ CREATE POLICY "Admins can update reports"
 -- Admins: Only admins can view, self-insert for signup
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
+-- SECURITY DEFINER function to check super_admin without RLS recursion
+CREATE OR REPLACE FUNCTION public.check_super_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.admins
+    WHERE user_id = auth.uid() AND role = 'super_admin' AND is_active = true
+  );
+$$;
+
 -- Minimal non-recursive policies for admins table
 DROP POLICY IF EXISTS "Admins can view admins" ON admins;
 DROP POLICY IF EXISTS "Admins can view themselves" ON admins;
 DROP POLICY IF EXISTS "Super admins can view all admins" ON admins;
 DROP POLICY IF EXISTS "Super admin can update admins" ON admins;
 DROP POLICY IF EXISTS "Admins can signup" ON admins;
+DROP POLICY IF EXISTS "admins_self_select" ON admins;
 
-CREATE POLICY "admins_self_select" ON admins FOR SELECT
-USING (auth.uid() = user_id);
+CREATE POLICY "admins_select" ON admins FOR SELECT
+USING (auth.uid() = user_id OR public.check_super_admin());
+
+CREATE POLICY "admins_update" ON admins FOR UPDATE
+USING (public.check_super_admin());
 
 CREATE POLICY "admins_signup_insert" ON admins FOR INSERT
 WITH CHECK (user_id = auth.uid());

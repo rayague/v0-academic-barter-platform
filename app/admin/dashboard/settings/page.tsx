@@ -30,16 +30,33 @@ export default function AdminSettingsPage() {
 
       if (!sessionData.session) return
 
-      const { data, error } = await supabase
+      // Try admins table first
+      const { data: adminData } = await supabase
         .from("admins")
         .select("*")
         .eq("user_id", sessionData.session.user.id)
         .maybeSingle()
 
-      if (error || !data) {
-        console.warn("Could not fetch admin profile from admins table, checking profiles.is_admin")
-      } else {
-        setAdmin(data)
+      if (adminData) {
+        setAdmin(adminData)
+        return
+      }
+
+      // Fallback to profiles.is_admin
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, email, is_admin")
+        .eq("id", sessionData.session.user.id)
+        .single()
+
+      if (profileData?.is_admin) {
+        setAdmin({
+          id: sessionData.session.user.id,
+          full_name: profileData.full_name || "",
+          email: profileData.email || "",
+          role: "admin",
+          is_active: true,
+        })
       }
     } catch (err) {
       console.error("Error fetching admin profile:", err)
