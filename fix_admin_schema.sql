@@ -11,10 +11,6 @@ ALTER TABLE reports ADD COLUMN IF NOT EXISTS report_type TEXT NOT NULL DEFAULT '
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS resolved_by UUID REFERENCES admins(id) ON DELETE SET NULL;
 ALTER TABLE reports ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP WITH TIME ZONE;
 
--- Migrate existing reason values to report_type
--- (reason in schema is analogous to what code calls report_type)
-UPDATE reports SET report_type = reason WHERE report_type = 'other' AND reason IS NOT NULL;
-
 -- Update status CHECK constraint to include open/in_review
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS reports_status_check;
 UPDATE reports SET status = 'open' WHERE status = 'pending';
