@@ -24,7 +24,6 @@ interface Admin {
   role: string
   is_active: boolean
   created_at: string
-  profiles?: { is_admin: boolean }
 }
 
 export default function AdminAdminsPage() {
@@ -46,7 +45,7 @@ export default function AdminAdminsPage() {
 
       const { data, error } = await supabase
         .from("admins")
-        .select("*, profiles(is_admin)")
+        .select("*")
         .order("created_at", { ascending: false })
 
       if (error) throw error
